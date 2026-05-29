@@ -48,10 +48,10 @@ export default function useTimer(taskId) {
     return () => clearInterval(intervalRef.current);
   }, [running]);
 
-  const total = savedTotal + elapsed;
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  // display 只显示当前会话的计时，累计时长通过 savedTotal 单独展示
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const display = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-  return { elapsed, total, running, display, start, pause, reset, toggle };
+  return { elapsed, savedTotal, running, display, start, pause, reset, toggle };
 }

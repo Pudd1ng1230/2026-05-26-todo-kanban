@@ -10,7 +10,7 @@ import './index.css';
 
 function App() {
   const { boards, activeId, setActiveId, addBoard, removeBoard } = useBoards();
-  const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search } = useTasks(activeId);
+  const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search, reload } = useTasks(activeId);
   const recycle = useRecycleBin(activeId);
   const [showRecycle, setShowRecycle] = useState(false);
 
@@ -53,8 +53,9 @@ function App() {
         {showRecycle && (
           <RecycleBin
             tasks={recycle.tasks}
+            boards={boards}
             loading={recycle.loading}
-            onRestore={(id) => { recycle.restore(id); }}
+            onRestore={async (id) => { await recycle.restore(id); reload(); }}
             onPermanentDelete={(id) => { recycle.permanentDelete(id); }}
             onClose={() => setShowRecycle(false)}
           />

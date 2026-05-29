@@ -189,7 +189,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
                   {timer.running ? '⏸' : '▶'}
                 </button>
                 <span className={`timer-display ${timer.running ? 'ticking' : ''}`}>{timer.display}</span>
-                <span className="timer-total">累计 {Math.floor(timer.total / 60)}分</span>
+                <span className="timer-total">累计 {Math.floor(timer.savedTotal / 60)}分</span>
                 {timer.elapsed > 0 && (
                   <button className="timer-reset" onClick={e => { e.stopPropagation(); timer.reset(); }}>↺</button>
                 )}
