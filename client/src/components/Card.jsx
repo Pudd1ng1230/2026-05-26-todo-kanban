@@ -154,7 +154,8 @@ export default function Card({ id, index, title, description, status, onDelete, 
                   {/* 子任务 */}
                   <div className="subtask-section">
                     {subtasks.map(s => (
-                      <div key={s.id} className={`subtask-item ${s.completed ? 'done' : ''}`}>
+                      <div key={s.id} className={`subtask-item ${s.completed ? 'done' : ''}`}
+                        onMouseDown={e => e.stopPropagation()}>
                         <input type="checkbox" checked={!!s.completed} onChange={() => toggleSub(s.id)} />
                         <span>{s.title}</span>
                         <button className="subtask-del" onClick={() => removeSub(s.id)}>×</button>
@@ -169,12 +170,13 @@ export default function Card({ id, index, title, description, status, onDelete, 
                   {/* 附件 */}
                   <div className="attach-section">
                     {attachments.map(a => (
-                      <div key={a.id} className="attach-item">
+                      <div key={a.id} className="attach-item"
+                        onMouseDown={e => e.stopPropagation()}>
                         <a href={`http://localhost:3001/uploads/${a.filename}`} target="_blank" rel="noreferrer">{a.original_name}</a>
                         <button onClick={() => removeAtt(a.id)}>×</button>
                       </div>
                     ))}
-                    <label className="attach-upload">
+                    <label className="attach-upload" onMouseDown={e => e.stopPropagation()}>
                       + 上传文件
                       <input type="file" hidden onChange={handleUpload} />
                     </label>
@@ -184,22 +186,32 @@ export default function Card({ id, index, title, description, status, onDelete, 
 
               {/* 计时器 */}
               <div className="card-timer">
-                <button className="timer-btn" onClick={e => { e.stopPropagation(); timer.toggle(); }}
+                <button className="timer-btn"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); timer.toggle(); }}
                   title={timer.running ? '暂停' : '开始'}>
                   {timer.running ? '⏸' : '▶'}
                 </button>
                 <span className={`timer-display ${timer.running ? 'ticking' : ''}`}>{timer.display}</span>
                 <span className="timer-total">累计 {Math.floor(timer.savedTotal / 60)}分</span>
                 {timer.elapsed > 0 && (
-                  <button className="timer-reset" onClick={e => { e.stopPropagation(); timer.reset(); }}>↺</button>
+                  <button className="timer-reset"
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); timer.reset(); }}>↺</button>
                 )}
               </div>
 
               <div className="card-actions">
-                <button className="card-detail" onClick={e => { e.stopPropagation(); setShowDetails(!showDetails); }}
+                <button className="card-detail"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); setShowDetails(!showDetails); }}
                   title="详情">{showDetails ? '▲' : '▼'}</button>
-                <button className="card-edit" onClick={e => { e.stopPropagation(); startEdit(); }} title="编辑">✎</button>
-                <button className="card-delete" onClick={e => { e.stopPropagation(); if (window.confirm('确认删除？')) onDelete(id); }} title="删除">✕</button>
+                <button className="card-edit"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); startEdit(); }} title="编辑">✎</button>
+                <button className="card-delete"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); if (window.confirm('确认删除？')) onDelete(id); }} title="删除">✕</button>
               </div>
             </>
           )}
