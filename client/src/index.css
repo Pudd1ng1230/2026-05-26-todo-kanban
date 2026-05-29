@@ -383,30 +383,6 @@ body {
   border-radius: 5px;
 }
 
-/* ── Delete confirm ── */
-.card-confirm-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10,10,14,0.92);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 10;
-  padding: 16px;
-}
-.card-confirm-overlay p {
-  font-size: 13px;
-  color: #ccc;
-  text-align: center;
-}
-.card-confirm-buttons {
-  display: flex;
-  gap: 8px;
-}
-
 /* ── Drag & Drop ── */
 .card.dragging {
   border-color: rgba(255,255,255,0.12);
