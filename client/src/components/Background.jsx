@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-const PARTICLE_COUNT = 80;
-const CONNECT_DIST = 130;
-const MOUSE_INFLUENCE = 180;
+const PARTICLE_COUNT = 40;
+const CONNECT_DIST = 120;
+const MOUSE_INFLUENCE = 150;
 
 const COLORS = [
   { r: 241, g: 90, b: 36 },   // orange

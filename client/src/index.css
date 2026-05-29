@@ -25,7 +25,6 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 /* ── Background Image ── */
@@ -102,16 +101,13 @@ body {
 /* ── Column ── */
 .column {
   flex: 1;
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(18, 18, 18, 0.85);
   border-radius: var(--radius);
   padding: 18px;
   border: 1px solid var(--border);
   min-height: 320px;
   transition: border-color 0.4s, box-shadow 0.4s;
   position: relative;
-  overflow: hidden;
 }
 
 /* Subtle top edge glow per column */
@@ -217,7 +213,6 @@ body {
 .card:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(4px);
 }
 
 .card.status-todo:hover {
@@ -278,10 +273,19 @@ body {
 
 /* ── Drag & Drop ── */
 .card.dragging {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  transform: rotate(3deg) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(20, 20, 20, 0.95);
   z-index: 100;
+  transition: none;
+}
+
+.card.dragging .card-title {
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.card.dragging .card-desc {
+  color: #aaa;
 }
 
 .column-list.dragging-over {
