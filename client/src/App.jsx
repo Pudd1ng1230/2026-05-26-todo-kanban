@@ -4,7 +4,7 @@ import useTasks from './hooks/useTasks';
 import './index.css';
 
 function App() {
-  const { tasks, loading, error, addTask, removeTask, handleMoveTask } = useTasks();
+  const { tasks, loading, error, addTask, removeTask, handleMoveTask, editTask } = useTasks();
 
   return (
     <>
@@ -26,7 +26,7 @@ function App() {
         ) : error ? (
           <div className="error">加载失败: {error}</div>
         ) : (
-          <Board tasks={tasks} onAdd={addTask} onDelete={removeTask} onMove={handleMoveTask} />
+          <Board tasks={tasks} onAdd={addTask} onDelete={removeTask} onMove={handleMoveTask} onEdit={editTask} />
         )}
       </div>
     </>

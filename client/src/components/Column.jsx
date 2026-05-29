@@ -8,7 +8,7 @@ const statusLabels = {
   done: '已完成',
 };
 
-export default function Column({ status, tasks, onAdd, onDelete }) {
+export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
   return (
     <div className="column">
       <div className="column-header">
@@ -36,6 +36,7 @@ export default function Column({ status, tasks, onAdd, onDelete }) {
                   description={task.description}
                   status={task.status}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                 />
               ))
             )}
@@ -44,7 +45,7 @@ export default function Column({ status, tasks, onAdd, onDelete }) {
         )}
       </Droppable>
 
-      <AddCardForm onAdd={(title) => onAdd(status, title)} />
+      <AddCardForm onAdd={(title, desc) => onAdd(status, title, desc)} />
     </div>
   );
 }

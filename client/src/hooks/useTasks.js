@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getTasks, createTask, deleteTask, moveTask } from '../services/api';
+import { getTasks, createTask, updateTask, deleteTask, moveTask } from '../services/api';
 
 export default function useTasks() {
   const [tasks, setTasks] = useState([]);
@@ -13,10 +13,10 @@ export default function useTasks() {
       .finally(() => setLoading(false));
   }, []);
 
-  const addTask = useCallback(async (status, title) => {
-    const newTask = await createTask(title);
+  const addTask = useCallback(async (status, title, description = '') => {
+    const newTask = await createTask(title, description);
     await moveTask(newTask.id, status, 0);
-    setTasks(prev => [...prev, { ...newTask, status }]);
+    setTasks(prev => [...prev, { ...newTask, status, description }]);
   }, []);
 
   const removeTask = useCallback(async (id) => {
@@ -31,5 +31,10 @@ export default function useTasks() {
     await moveTask(taskId, newStatus, newPosition);
   }, []);
 
-  return { tasks, loading, error, addTask, removeTask, handleMoveTask };
+  const editTask = useCallback(async (id, title, description) => {
+    const updated = await updateTask(id, title, description);
+    setTasks(prev => prev.map(t => t.id === id ? updated : t));
+  }, []);
+
+  return { tasks, loading, error, addTask, removeTask, handleMoveTask, editTask };
 }
