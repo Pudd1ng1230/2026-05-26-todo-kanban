@@ -140,3 +140,57 @@ Todo 看板的业务逻辑极其简单（增删改查），用 C++ 写需要几�
 **4. import 和 require 的区别**
 
 `require('express')` 是 Node.js 传统写法（CommonJS），`import ... from ...` 是新写法（ES Modules）。后端用 require 因为 Express 生态更稳定，前端 React/Vite 用 import 因为浏览器原生支持。
+
+**5. MVC 架构是什么？**
+
+MVC 是一种把后端代码拆成三层的设计模式，源自桌面 GUI 时代，至今是 Web 开发的主流分层方式。
+
+| 层 | 英文 | 职责 | 类比 |
+|----|------|------|------|
+| M - Model | 数据模型 | 跟数据库打交道（增删改查） | 后厨仓库管理员 |
+| V - View | 视图 | 展示数据给用户 | 餐厅的摆盘 |
+| C - Controller | 控制器 | 接收请求、调 Model、返回结果 | 服务员 |
+
+**一次完整的请求流程**：
+
+```
+浏览器请求 "给我所有任务"
+    ↓
+Route（路由） →  匹配 URL，转发给正确的 Controller
+    ↓
+Controller（控制器） →  调用 Model 查数据，把结果返回
+    ↓
+Model（模型） →  执行 SQL 语句，返回数据
+    ↓
+Controller 把数据变成 JSON 返回给浏览器
+```
+
+**为什么要分层？**
+
+如果全写在一个函数里：
+
+```js
+// 反例：路由 + 逻辑 + 数据库操作 混在一起
+app.get('/api/tasks', (req, res) => {
+  const db = new Database('todo.db');
+  const rows = db.prepare('SELECT * FROM tasks WHERE status = ?').all('todo');
+  // 在这里混了 路由匹配 + 业务逻辑 + 数据库操作
+  res.json(rows);
+});
+```
+
+项目小的时候还行，但一旦接口多了（10 个、20 个），改数据库表结构就要改每个接口函数。拆成 MVC 后，改数据库只需要改 Model 层，Controller 和 Route 不用动。
+
+**在本项目中的对应关系**：
+
+```
+server/
+├── routes/        → "有哪些 API 地址"（/api/tasks, /api/tasks/:id）
+├── controllers/   → "每个地址干什么"（查、增、删、改的具体逻辑）
+├── models/        → "怎么跟数据库说话"（SQL 语句在这里）
+└── db/            → "数据库连接"（打开/关闭 SQLite 文件）
+```
+
+**类比**：不建 MVC 就像把所有文件堆桌面上，MVC 就像按工作/学习/娱乐建三个文件夹。东西多了不乱。
+
+> Day 3 我们会亲手实现这个分层，到时候每个文件夹写代码进去就更清楚了。
