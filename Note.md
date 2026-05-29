@@ -566,3 +566,109 @@ SQLite 中每张有 AUTOINCREMENT 主键的表，插入后会返回自增的 id 
 **3. `Number(req.params.id)` 为什么这样写？**
 
 URL 参数永远是字符串类型（`"3"` 不是 `3`）。SQLite 的 `WHERE id = ?` 能自动处理类型转换，但显式 `Number()` 是良好习惯，避免 `WHERE id = "3abc"` 之类的问题。
+
+---
+
+## Day 4：前端组件设计与布局
+
+**日期**：2026-05-29
+
+### 一、本阶段目标回顾
+
+搭建 React 组件树，实现三列看板布局，应用青橙双色调（cyan-orange）赛博朋克风格。
+
+- 组件树：App → Board → Column → Card + AddCardForm
+- 自定义光标 + 粒子拖尾 + Canvas 粒子网络背景
+- 每列独立配色：待办(橙) / 进行中(青) / 完成(青绿)
+
+### 二、核心概念解析
+
+**1. React 组件树与单向数据流**
+
+```
+App (tasks state)
+ ├── Board (接收 tasks, onAdd)
+ │   ├── Column[0] (接收 status="todo", filtered tasks)
+ │   │   ├── Card[0], Card[1]... (接收 title, description, status)
+ │   │   └── AddCardForm (接收 onAdd 回调)
+ │   ├── Column[1] (status="in-progress")
+ │   └── Column[2] (status="done")
+ └── Background (Canvas 粒子)
+```
+
+数据只从父传子（props），子组件通过回调（onAdd）通知父组件。state 只属于 App，Board/Column/Card 都是纯展示。
+
+**2. 自定义光标原理**
+
+```js
+// 三步实现：
+// ① CSS: body { cursor: none; } 隐藏原生光标
+// ② requestAnimationFrame 驱动自定义 DOM 元素跟随鼠标
+// ③ lerp（线性插值）平滑：当前位置 += (目标位置 - 当前位置) * 0.25
+```
+
+拖尾粒子用级联延迟：第 i 个粒子追第 i-1 个位置，形成蛇形跟随。
+
+**3. Canvas 粒子背景**
+
+- `canvas` 覆盖全视口，`pointer-events: none` 不拦截点击
+- 80 个粒子分橙/青/青绿三色
+- 鼠标 180px 范围内粒子被推开
+- 同色粒子间距 < 130px 画半透明连线 → 星图效果
+- `requestAnimationFrame` 驱动 60fps 动画
+
+**4. `useRef` 直接操作 DOM，不触发重渲染**
+
+`useLiquidCursor` hook 中用 `useRef` 存 DOM 引用和位置，用 `requestAnimationFrame` 直接操作 `style.transform`。这比 `useState` + React 重渲染快得多——60fps 动画不能每帧走 React 的 diff 流程。
+
+### 三、遇到的坑与解决方案
+
+| 坑 | 原因 | 解决 |
+|----|------|------|
+| 导入项目根目录的 background.jpg | Vite 只服务 `client/` 下的文件 | 复制到 `client/public/`，用绝对路径 `/background.jpg` 引用 |
+| 粒子性能 | Canvas 在每次 resize 时需要重新初始化 | resize 事件只更新宽高，粒子数组不变 |
+| nth-child 选择器 | Column 是动态渲染的，不能依赖 status class | CSS 用 `:nth-child(1/2/3)` 分别给三列配色 |
+| 背景太暗看不到 | blur(12px) + brightness(0.12) 太高 | 调为 blur(4px) + brightness(0.28) |
+
+### 四、组件文件总览
+
+| 文件 | 职责 | 行数 |
+|------|------|------|
+| `index.css` | 全局样式 + CSS 变量 + 动画 | ~240 |
+| `Background.jsx` | Canvas 粒子网络 + 鼠标交互 | ~110 |
+| `App.jsx` | 根组件：state + 自定义光标 + 背景图 | ~135 |
+| `Board.jsx` | 三列排列 + 按 status 分组 | ~18 |
+| `Column.jsx` | 列标题 + Card 列表 + AddCardForm + 空状态 | ~28 |
+| `Card.jsx` | 展示标题 + 描述 + 状态左色条 | ~9 |
+| `AddCardForm.jsx` | 展开/收起输入框 + 回车提交 | ~38 |
+
+### 五、color scheme 设计
+
+| 列 | 主色 | 用途 |
+|------|------|------|
+| 待办 (todo) | `#f15a24` 橙 | dot / border-left / btn-primary / input focus glow |
+| 进行中 (in-progress) | `#00b8d4` 青 | dot / border-left / btn-primary / input focus glow |
+| 已完成 (done) | `#0d9488` 青绿 | dot / border-left / btn-primary / input focus glow |
+
+三列 hover 时的边框色、阴影色、header 底线、顶线都跟随各自的颜色。
+
+### 六、补充知识
+
+**1. `backdrop-filter` vs `filter`**
+
+- `filter: blur(10px)`：元素**自身**变模糊
+- `backdrop-filter: blur(10px)`：元素**背后**的内容变模糊（毛玻璃效果）
+
+Column 用的 `backdrop-filter: blur(16px)` 让列面板后面的粒子/背景图变模糊，面板本身清晰。
+
+**2. requestAnimationFrame 为什么适合动画？**
+
+- 浏览器在每次重绘前调用，自动同步到屏幕刷新率（通常 60fps）
+- 页面切到后台时自动暂停，不浪费 CPU
+- `setInterval` 做不到这两点
+
+在本项目中，光标追踪和背景粒子都用 rAF 驱动。
+
+**3. 为什么自定义光标要操作 DOM 而不走 React state？**
+
+React 的 `setState` → diff → 重渲染每帧要几毫秒，60fps 动画下每帧预算只有 16ms。用 `useRef` + 直接 DOM 操作（`el.style.transform = ...`）免去 React 的中间层，保持丝滑。
