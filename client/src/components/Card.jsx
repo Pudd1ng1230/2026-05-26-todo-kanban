@@ -15,6 +15,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
   const [editDueDate, setEditDueDate] = useState(dueDate || '');
   const [editColor, setEditColor] = useState(color || '');
   const [showDetails, setShowDetails] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // 子任务
   const [subtasks, setSubtasks] = useState([]);
@@ -95,6 +96,18 @@ export default function Card({ id, index, title, description, status, onDelete, 
             ...(color ? { borderLeftColor: color, '--card-accent': color } : {}),
           }}
         >
+          {/* 删除确认浮层 */}
+          {confirmingDelete && (
+            <div className="card-confirm-overlay" onClick={e => e.stopPropagation()}>
+              <p>确认删除「{title}」？</p>
+              <div className="card-confirm-buttons">
+                <button className="btn btn-primary btn-sm" style={{ background: 'var(--orange)', color: '#000' }}
+                  onClick={e => { e.stopPropagation(); onDelete(id); }}>删除</button>
+                <button className="btn btn-secondary btn-sm"
+                  onClick={e => { e.stopPropagation(); setConfirmingDelete(false); }}>取消</button>
+              </div>
+            </div>
+          )}
           {editing ? (
             <div className="card-edit-form">
               <input className="card-edit-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="标题" autoFocus
@@ -199,7 +212,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
                 <button className="card-detail" onClick={e => { e.stopPropagation(); setShowDetails(!showDetails); }}
                   title="详情">{showDetails ? '▲' : '▼'}</button>
                 <button className="card-edit" onClick={e => { e.stopPropagation(); startEdit(); }} title="编辑">✎</button>
-                <button className="card-delete" onClick={e => { e.stopPropagation(); onDelete(id); }} title="删除">✕</button>
+                <button className="card-delete" onClick={e => { e.stopPropagation(); setConfirmingDelete(true); }} title="删除">✕</button>
               </div>
             </>
           )}
