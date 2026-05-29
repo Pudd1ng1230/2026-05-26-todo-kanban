@@ -36,9 +36,19 @@ export default function useTasks(boardId) {
   }, []);
 
   const handleMoveTask = useCallback(async (taskId, newStatus, newPosition) => {
-    setTasks(prev => prev.map(t =>
-      t.id === taskId ? { ...t, status: newStatus, position: newPosition } : t
-    ));
+    setTasks(prev => {
+      const colTasks = prev
+        .filter(t => t.status === newStatus)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const dragged = colTasks.find(t => t.id === taskId);
+      if (!dragged) return prev;
+      const others = colTasks.filter(t => t.id !== taskId);
+      // 如果跨列拖拽，更新 status
+      const updatedDragged = { ...dragged, status: newStatus };
+      others.splice(newPosition, 0, updatedDragged);
+      const reordered = others.map((t, i) => ({ ...t, position: i }));
+      return prev.map(t => reordered.find(r => r.id === t.id) || t);
+    });
     await moveTask(taskId, newStatus, newPosition);
   }, []);
 

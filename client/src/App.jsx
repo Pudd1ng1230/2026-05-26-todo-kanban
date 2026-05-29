@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import Board from './components/Board';
 import BoardSelector from './components/BoardSelector';
-import ThemeToggle from './components/ThemeToggle';
 import SearchBar from './components/SearchBar';
 import RecycleBin from './components/RecycleBin';
 import Background from './components/Background';
 import useBoards from './hooks/useBoards';
-import useTheme from './hooks/useTheme';
 import useTasks, { useRecycleBin } from './hooks/useTasks';
 import './index.css';
 
@@ -14,7 +12,6 @@ function App() {
   const { boards, activeId, setActiveId, addBoard, removeBoard } = useBoards();
   const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search } = useTasks(activeId);
   const recycle = useRecycleBin(activeId);
-  const theme = useTheme();
   const [showRecycle, setShowRecycle] = useState(false);
 
   return (
@@ -42,7 +39,6 @@ function App() {
             <button className="btn btn-secondary btn-sm" onClick={() => { setShowRecycle(true); recycle.reload(); }}>
               🗑️
             </button>
-            <ThemeToggle dark={theme.dark} onToggle={theme.toggle} />
           </div>
         </div>
 
