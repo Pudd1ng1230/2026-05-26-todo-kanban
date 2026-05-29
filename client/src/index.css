@@ -1,4 +1,5 @@
-:root {
+/* ── Dark theme (default) ── */
+:root, .dark {
   --bg: #060606;
   --surface: rgba(15, 15, 15, 0.65);
   --border: rgba(255, 255, 255, 0.06);
@@ -16,6 +17,34 @@
   --teal-dim: rgba(13, 148, 136, 0.5);
   --teal-glow: rgba(13, 148, 136, 0.2);
   --radius: 10px;
+  --card-bg: rgba(255, 255, 255, 0.02);
+  --card-hover-bg: rgba(255, 255, 255, 0.04);
+  --input-bg: rgba(255, 255, 255, 0.02);
+  --tag-bg: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Light theme ── */
+.light {
+  --bg: #f5f5f5;
+  --surface: rgba(255, 255, 255, 0.85);
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #222;
+  --text-muted: #999;
+  --orange: #e04a1a;
+  --orange-dim: rgba(224, 74, 26, 0.4);
+  --orange-glow: rgba(224, 74, 26, 0.15);
+  --orange-subtle: rgba(224, 74, 26, 0.06);
+  --cyan: #0088a0;
+  --cyan-dim: rgba(0, 136, 160, 0.4);
+  --cyan-glow: rgba(0, 136, 160, 0.15);
+  --cyan-subtle: rgba(0, 136, 160, 0.06);
+  --teal: #0a7a72;
+  --teal-dim: rgba(10, 122, 114, 0.4);
+  --teal-glow: rgba(10, 122, 114, 0.15);
+  --card-bg: rgba(0, 0, 0, 0.03);
+  --card-hover-bg: rgba(0, 0, 0, 0.06);
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --tag-bg: rgba(0, 0, 0, 0.06);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -531,4 +560,308 @@ body {
 .loading { color: var(--text-muted); }
 
 .error { color: var(--orange); }
+
+/* ═══════════════════════════════════════
+   Phase 2: New Components
+   ═══════════════════════════════════════ */
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Board Selector ── */
+.board-selector {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.board-tab {
+  display: flex;
+  align-items: center;
+}
+.board-tab button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.board-tab.active button {
+  background: var(--cyan);
+  color: #000;
+  border-color: var(--cyan);
+}
+.board-tab.add button {
+  border-style: dashed;
+}
+.board-tab-del {
+  margin-left: -4px;
+  padding: 2px 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  border-radius: 3px;
+}
+.board-tab-del:hover { color: var(--orange); }
+.board-tab.adding {
+  display: flex;
+  gap: 4px;
+}
+.board-tab.adding input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* ── Search ── */
+.search-bar {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 13px;
+  width: 160px;
+  outline: none;
+}
+.search-bar:focus { border-color: var(--cyan-dim); }
+
+/* ── Theme Toggle ── */
+.theme-toggle {
+  width: 32px; height: 32px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Badges ── */
+.card-meta {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--tag-bg);
+  color: var(--text-muted);
+}
+.badge.priority-high { background: rgba(241, 90, 36, 0.15); color: var(--orange); }
+.badge.priority-low { background: rgba(0, 184, 212, 0.1); color: var(--cyan); }
+.badge.due-date.overdue { background: rgba(241, 90, 36, 0.2); color: var(--orange); }
+.badge.subtask-badge { cursor: pointer; }
+
+/* ── Priority border ── */
+.card.priority-high { border-left-color: var(--orange) !important; }
+.card.priority-low  { border-left-color: var(--cyan) !important; }
+
+/* ── Overdue ── */
+.card.overdue { box-shadow: inset 0 0 0 1px rgba(241,90,36,0.2); }
+
+/* ── Subtask bar ── */
+.subtask-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.subtask-bar-fill {
+  height: 100%;
+  background: var(--cyan);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* ── Card details ── */
+.card-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.subtask-item.done span { text-decoration: line-through; color: var(--text-muted); }
+.subtask-item input[type=checkbox] { accent-color: var(--cyan); }
+.subtask-del, .attach-item button {
+  margin-left: auto;
+  border: none; background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+.subtask-del:hover { color: var(--orange); }
+
+.subtask-add input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-radius: 4px;
+  outline: none;
+  margin-top: 4px;
+}
+.subtask-add input:focus { border-color: var(--cyan-dim); color: var(--text); }
+
+.attach-section { margin-top: 6px; }
+.attach-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 2px 0;
+}
+.attach-item a { color: var(--cyan); text-decoration: none; }
+.attach-item a:hover { text-decoration: underline; }
+
+.attach-upload {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 4px;
+}
+.attach-upload:hover { border-color: var(--cyan-dim); color: var(--text); }
+
+/* ── Card action buttons ── */
+.card-detail {
+  width: 22px; height: 22px;
+  border: none; background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.card-detail:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* ── Timer total ── */
+.timer-total {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+/* ── AddCardForm extras ── */
+.btn-more {
+  border: none; background: none;
+  color: var(--text-muted);
+  font-size: 12px; cursor: pointer;
+  padding: 4px 0;
+}
+.btn-more:hover { color: var(--cyan); }
+
+.add-card-extra {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.add-card-extra label {
+  font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.add-card-extra select,
+.add-card-extra input[type=date] {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  border-radius: 5px;
+  font-size: 12px;
+  outline: none;
+}
+
+.color-picker { display: flex; gap: 4px; }
+.color-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.color-dot.active { border-color: var(--text); }
+
+/* ── Card edit extras ── */
+.card-edit-row {
+  display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+}
+.card-edit-row select,
+.card-edit-row input[type=date] {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* ── Recycle Bin ── */
+.recycle-bin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.recycle-bin {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 520px; width: 90%;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.recycle-bin-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.recycle-bin-header h2 { font-size: 18px; }
+.recycle-list { display: flex; flex-direction: column; gap: 8px; }
+.recycle-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px; border-radius: 6px;
+  background: var(--card-bg);
+}
+.recycle-title { flex: 1; font-size: 14px; }
+.recycle-date { font-size: 11px; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .app { padding: 16px 8px; }
+  .board { flex-direction: column; gap: 12px; }
+  .column { min-height: auto; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar-right { justify-content: flex-end; }
+  .search-bar { width: 120px; }
+  .board-selector { overflow-x: auto; flex-wrap: nowrap; }
+}
 

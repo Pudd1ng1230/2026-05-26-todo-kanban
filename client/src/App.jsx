@@ -1,18 +1,25 @@
+import { useState } from 'react';
 import Board from './components/Board';
+import BoardSelector from './components/BoardSelector';
+import ThemeToggle from './components/ThemeToggle';
+import SearchBar from './components/SearchBar';
+import RecycleBin from './components/RecycleBin';
 import Background from './components/Background';
-import useTasks from './hooks/useTasks';
+import useBoards from './hooks/useBoards';
+import useTheme from './hooks/useTheme';
+import useTasks, { useRecycleBin } from './hooks/useTasks';
 import './index.css';
 
 function App() {
-  const { tasks, loading, error, addTask, removeTask, handleMoveTask, editTask } = useTasks();
+  const { boards, activeId, setActiveId, addBoard, removeBoard } = useBoards();
+  const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search } = useTasks(activeId);
+  const recycle = useRecycleBin(activeId);
+  const theme = useTheme();
+  const [showRecycle, setShowRecycle] = useState(false);
 
   return (
     <>
-      {/* Background image with blur overlay */}
-      <div className="bg-image">
-        <img src="/background.jpg" alt="" />
-      </div>
-
+      <div className="bg-image"><img src="/background.jpg" alt="" /></div>
       <Background />
 
       <div className="app">
@@ -21,12 +28,40 @@ function App() {
           <p className="subtitle">Kanban Board</p>
           <div className="header-divider" />
         </header>
+
+        <div className="toolbar">
+          <BoardSelector
+            boards={boards}
+            activeId={activeId}
+            onSelect={setActiveId}
+            onAdd={addBoard}
+            onDelete={removeBoard}
+          />
+          <div className="toolbar-right">
+            <SearchBar onSearch={search} />
+            <button className="btn btn-secondary btn-sm" onClick={() => { setShowRecycle(true); recycle.reload(); }}>
+              🗑️
+            </button>
+            <ThemeToggle dark={theme.dark} onToggle={theme.toggle} />
+          </div>
+        </div>
+
         {loading ? (
           <div className="loading">加载中...</div>
         ) : error ? (
           <div className="error">加载失败: {error}</div>
         ) : (
           <Board tasks={tasks} onAdd={addTask} onDelete={removeTask} onMove={handleMoveTask} onEdit={editTask} />
+        )}
+
+        {showRecycle && (
+          <RecycleBin
+            tasks={recycle.tasks}
+            loading={recycle.loading}
+            onRestore={(id) => { recycle.restore(id); }}
+            onPermanentDelete={(id) => { recycle.permanentDelete(id); }}
+            onClose={() => setShowRecycle(false)}
+          />
         )}
       </div>
     </>

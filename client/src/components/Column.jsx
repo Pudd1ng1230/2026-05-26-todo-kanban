@@ -2,11 +2,7 @@ import { Droppable } from '@hello-pangea/dnd';
 import Card from './Card';
 import AddCardForm from './AddCardForm';
 
-const statusLabels = {
-  todo: '待办',
-  'in-progress': '进行中',
-  done: '已完成',
-};
+const statusLabels = { todo: '待办', 'in-progress': '进行中', done: '已完成' };
 
 export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
   return (
@@ -35,6 +31,9 @@ export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
                   title={task.title}
                   description={task.description}
                   status={task.status}
+                  priority={task.priority}
+                  dueDate={task.due_date}
+                  color={task.color}
                   onDelete={onDelete}
                   onEdit={onEdit}
                 />
@@ -45,7 +44,7 @@ export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
         )}
       </Droppable>
 
-      <AddCardForm onAdd={(title, desc) => onAdd(status, title, desc)} />
+      <AddCardForm onAdd={(title, desc, priority, dueDate, color) => onAdd(status, title, desc, priority, dueDate, color)} />
     </div>
   );
 }
