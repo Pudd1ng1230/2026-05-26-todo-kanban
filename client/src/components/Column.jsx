@@ -1,3 +1,4 @@
+import { Droppable } from '@hello-pangea/dnd';
 import Card from './Card';
 import AddCardForm from './AddCardForm';
 
@@ -7,7 +8,7 @@ const statusLabels = {
   done: '已完成',
 };
 
-export default function Column({ status, tasks, onAdd }) {
+export default function Column({ status, tasks, onAdd, onDelete }) {
   return (
     <div className="column">
       <div className="column-header">
@@ -15,15 +16,34 @@ export default function Column({ status, tasks, onAdd }) {
         <h2>{statusLabels[status]}</h2>
         <span className="column-count">{tasks.length}</span>
       </div>
-      <div className="column-list">
-        {tasks.length === 0 ? (
-          <div className="column-empty">暂无任务</div>
-        ) : (
-          tasks.map((task) => (
-            <Card key={task.id} title={task.title} description={task.description} status={task.status} />
-          ))
+
+      <Droppable droppableId={status}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`column-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+          >
+            {tasks.length === 0 ? (
+              <div className="column-empty">暂无任务</div>
+            ) : (
+              tasks.map((task, index) => (
+                <Card
+                  key={task.id}
+                  id={task.id}
+                  index={index}
+                  title={task.title}
+                  description={task.description}
+                  status={task.status}
+                  onDelete={onDelete}
+                />
+              ))
+            )}
+            {provided.placeholder}
+          </div>
         )}
-      </div>
+      </Droppable>
+
       <AddCardForm onAdd={(title) => onAdd(status, title)} />
     </div>
   );

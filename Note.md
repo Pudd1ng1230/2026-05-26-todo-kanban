@@ -672,3 +672,86 @@ Column 用的 `backdrop-filter: blur(16px)` 让列面板后面的粒子/背景�
 **3. 为什么自定义光标要操作 DOM 而不走 React state？**
 
 React 的 `setState` → diff → 重渲染每帧要几毫秒，60fps 动画下每帧预算只有 16ms。用 `useRef` + 直接 DOM 操作（`el.style.transform = ...`）免去 React 的中间层，保持丝滑。
+
+---
+
+## Day 5：前后端联调
+
+**日期**：2026-05-29
+
+### 一、目标
+
+前端不再用硬编码假数据，改为通过 HTTP 请求从后端 API 获取数据库真实数据。
+
+### 二、新建文件
+
+**services/api.js** — 封装 5 个 fetch 函数：
+- `getTasks()` → GET /api/tasks
+- `createTask(title, description)` → POST /api/tasks
+- `updateTask(id, title, description)` → PUT /api/tasks/:id
+- `deleteTask(id)` → DELETE /api/tasks/:id
+- `moveTask(id, status, position)` → PATCH /api/tasks/:id/move
+
+**hooks/useTasks.js** — 任务状态管理 hook：
+- `useState` 存 tasks / loading / error
+- `useEffect([], ...)` 首次加载自动 fetch
+- `addTask` / `removeTask` / `handleMoveTask` 三个操作函数
+
+### 三、改造文件
+
+- **App.jsx**：删 `initialTasks`，改用 `useTasks()`，传递 `onDelete` / `onMove`
+- **Board.jsx**：接收 `onDelete` / `onMove`
+- **Column.jsx**：透传 `onDelete`，Card 多传 `id`
+- **Card.jsx**：新增删除按钮（hover 显示 ✕）
+- **index.css**：`.card-delete` 样式
+
+### 四、核心概念
+
+- `fetch` → 浏览器内置 HTTP 客户端
+- `async/await` → 异步代码同步化写法
+- `useEffect([], ...)` → 组件挂载后执行一次
+- `useCallback` → 缓存函数引用，避免无关重渲染
+- **服务层抽离** → API 调用集中在 services/，组件只关心数据不关心网络细节
+
+### 五、数据流
+
+```
+SQLite → Express API → fetch('/api/tasks') → useTasks hook → App → Board → Column → Card
+```
+
+---
+
+## Day 6：拖拽功能 + 交互完善
+
+**日期**：2026-05-29
+
+### 一、拖拽库
+
+安装 `@hello-pangea/dnd`（React 18/19 兼容的 react-beautiful-dnd 继任者）。
+
+### 二、架构
+
+```
+DragDropContext (Board)
+  └── Droppable (Column × 3, droppableId = status)
+        └── Draggable (Card, draggableId = String(id))
+```
+
+- `onDragEnd` 拿到 `source`（原位置）和 `destination`（目标位置）
+- 乐观更新：先改本地 state，再发 API 持久化
+
+### 三、改动
+
+| 文件 | 改动 |
+|------|------|
+| `Board.jsx` | 加 DragDropContext + onDragEnd 逻辑 |
+| `Column.jsx` | 列表区包 Droppable，`snapshot.isDraggingOver` 高亮 |
+| `Card.jsx` | 包 Draggable，`snapshot.isDragging` 旋转+阴影 |
+| `useTasks.js` | 加 `handleMoveTask` 乐观更新 |
+| `App.jsx` | 传递 `onMove`，加 loading / error 状态展示 |
+| `index.css` | `.dragging` `.dragging-over` `.loading` `.error` 样式 |
+
+### 四、移除
+
+- 自定义光标 + 粒子拖尾（`useCustomCursor` hook、`.cursor-dot`、`.cursor-ring`、`cursor: none` 全部删除）
+- 恢复系统默认鼠标指针
