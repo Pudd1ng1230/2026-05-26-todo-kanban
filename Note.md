@@ -194,3 +194,375 @@ server/
 **类比**：不建 MVC 就像把所有文件堆桌面上，MVC 就像按工作/学习/娱乐建三个文件夹。东西多了不乱。
 
 > Day 3 我们会亲手实现这个分层，到时候每个文件夹写代码进去就更清楚了。
+
+---
+
+## Day 2：数据库设计与建表
+
+**日期**：2026-05-29
+
+### 一、本阶段目标回顾
+
+设计并创建 SQLite 数据库，插入测试数据验证表结构可用。
+
+- 安装 `better-sqlite3` 驱动
+- 写 `init.js` 建表脚本（7 个字段）
+- 写 `seed.js` 插入 4 条测试数据
+- 验证数据查询正常
+
+### 二、核心概念解析
+
+**1. SQLite vs MySQL**
+
+| | SQLite | MySQL |
+|------|------|------|
+| 形态 | 一个 `.db` 文件 | 独立运行的服务器程序 |
+| 安装 | npm install 即用 | 需单独安装 MySQL Server |
+| 配置 | 零配置 | 用户名、密码、权限、字符集... |
+| 适合场景 | 本地应用、小项目、嵌入式 | 多用户并发、大型 Web 服务 |
+
+SQLite 的数据库引擎**嵌入在 `better-sqlite3` 包里**（用 C 语言写的），调用时直接在你 Node.js 进程内执行，不经过网络。MySQL 则需要通过网络端口（3306）与独立进程通信。
+
+**2. better-sqlite3 —— 同步驱动**
+
+```js
+const db = new Database('todo.db');
+
+// prepare：编译 SQL → 返回一个可复用的"语句对象"
+const stmt = db.prepare('SELECT * FROM tasks WHERE status = ?');
+
+// all：执行查询，返回所有匹配行（数组）
+const todoTasks = stmt.all('todo');
+
+// run：执行写操作，返回 { changes: 1, lastInsertRowid: 5 }
+const result = stmt.run('学习 SQL', '', 'todo');
+```
+
+关键点：
+- **同步执行** — 不需要 `await`，代码一行一行走，适合新手
+- **prepare/run 模式** — 先编译 SQL（prepare），再传参数执行（run/all/get），比直接拼接字符串安全
+- **`?` 占位符** — 防 SQL 注入。驱动会自动处理转义，用户输入永远不会被当成 SQL 代码执行
+
+**3. 为什么分 init.js 和 seed.js？**
+
+- `init.js`：管**表结构**（schema）——什么时候建什么表、有哪些字段。只改结构的时候用
+- `seed.js`：管**测试数据** —— 开发时随手插几条假数据验证功能。功能稳定后可以删
+
+分开的好处：重置测试数据时不需要重新建表，只需要 `node seed.js` 再跑一次。
+
+### 三、遇到的坑与解决方案
+
+| 坑 | 原因 | 解决 |
+|----|------|------|
+| `node -e` 找不到 better-sqlite3 | -e 在当前目录运行，不在 server/ 下 | 改用 NODE_PATH 指定 server/node_modules，或直接在 server/db/ 里写独立脚本 |
+| init.js 重复运行报错 | CREATE TABLE 不带 IF NOT EXISTS | 加上 `IF NOT EXISTS` 后可以安全重复运行 |
+
+### 四、代码片段示例
+
+**server/db/init.js —— 建表脚本**
+```js
+const Database = require('better-sqlite3');
+const path = require('path');
+
+const db = new Database(path.join(__dirname, 'todo.db'));
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    status TEXT DEFAULT 'todo',
+    position INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
+
+console.log('数据库初始化完成：tasks 表已创建');
+db.close();
+```
+
+**server/db/seed.js —— 测试数据**
+```js
+const Database = require('better-sqlite3');
+const path = require('path');
+
+const db = new Database(path.join(__dirname, 'todo.db'));
+
+const insert = db.prepare('INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)');
+
+insert.run('学习 SQLite 基础', '了解 SQLite 和 MySQL 的区别', 'done');
+insert.run('搭建后端 API', '实现增删改查接口', 'in-progress');
+insert.run('写前端页面', '', 'todo');
+insert.run('拖拽功能', '用 @hello-pangea/dnd 实现卡片拖拽', 'todo');
+
+console.log('测试数据插入完成');
+db.close();
+```
+
+**tasks 表结构总览**
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER PK | 自增主键 |
+| title | TEXT NOT NULL | 任务标题，必填 |
+| description | TEXT DEFAULT '' | 任务描述，默认为空 |
+| status | TEXT DEFAULT 'todo' | todo / in-progress / done |
+| position | INTEGER DEFAULT 0 | 排序位置 |
+| created_at | TEXT | 创建时间，自动填充本地时间 |
+| updated_at | TEXT | 更新时间，自动填充本地时间 |
+
+### 五、数据库快速操作
+
+```bash
+# 初始化数据库（建表）
+node server/db/init.js
+
+# 插入测试数据
+node server/db/seed.js
+
+# 查看数据（命令行）
+node -e "
+const Database = require('better-sqlite3');
+const db = new Database('server/db/todo.db');
+console.log(JSON.stringify(db.prepare('SELECT * FROM tasks').all(), null, 2));
+db.close();
+"
+```
+
+### 六、补充知识
+
+**1. `__dirname` 是什么？**
+
+`__dirname` 是 Node.js 内置变量，始终等于**当前脚本所在的目录的绝对路径**。`path.join(__dirname, 'todo.db')` 保证 `todo.db` 始终创建在 `server/db/` 下，不会因为你在哪个目录执行 `node` 命令而乱跑。
+
+**2. prepare + ? 占位符为什么安全？**
+
+对比：
+```js
+// 危险：用户输入 "; DROP TABLE tasks; --"会删表
+db.exec(`INSERT INTO tasks (title) VALUES ('${userInput}')`);
+
+// 安全：用户输入永远当作"字符串值"，不会变成 SQL 代码
+db.prepare('INSERT INTO tasks (title) VALUES (?)').run(userInput);
+```
+
+`?` 占位符把"SQL 代码"和"数据值"彻底分开，数据库引擎不会把用户输入当成命令执行。
+
+---
+
+## Day 3：后端 API 设计与实现（CRUD）
+
+**日期**：2026-05-29
+
+### 一、本阶段目标回顾
+
+实现完整的 RESTful API，通过 HTTP 请求操作数据库。最终 5 个接口全部通过 curl 验证。
+
+- `GET /api/tasks` — 获取所有任务
+- `POST /api/tasks` — 创建新任务
+- `PUT /api/tasks/:id` — 更新任务
+- `DELETE /api/tasks/:id` — 删除任务
+- `PATCH /api/tasks/:id/move` — 移动（改状态/位置）
+
+### 二、核心概念解析
+
+**1. RESTful API 设计原则**
+
+- **URL 只表示"资源"（名词）**，不表示"动作"（动词）
+- **用 HTTP 方法区分动作**：GET = 查，POST = 增，PUT = 改，DELETE = 删
+- 反例：`/api/getTasks`、`/api/createTask`（把动词塞 URL 里）
+- 正例：都用 `/api/tasks`，靠方法区分
+
+**2. MVC 在代码中的体现**
+
+```
+请求 GET /api/tasks
+  ↓
+index.js          → app.use('/api/tasks', tasksRouter)  挂载路由
+  ↓
+routes/tasks.js   → router.get('/', controller.getAll)   URL → Controller
+  ↓
+controllers/...   → Task.getAll()                        调 Model，包装 JSON
+  ↓
+models/Task.js    → db.prepare('SELECT * FROM tasks')    执行 SQL
+  ↓
+JSON 返回给浏览器
+```
+
+每一层只做自己份内的事：
+- **Route** 不认识 SQL，只管 "哪个 URL 交给谁处理"
+- **Controller** 不认识 SQL，只管 "从请求拿参数、调 Model、返回响应"
+- **Model** 不认识 HTTP，只管 "执行 SQL 返回数据"
+
+**3. req.params vs req.body**
+
+| 来源 | 示例 | 说明 |
+|------|------|------|
+| `req.params` | URL 中的 `:id` | `/api/tasks/3` → `req.params.id` = `"3"` |
+| `req.body` | 请求体中的 JSON | `POST` 时 `{"title":"吃午饭"}` → `req.body.title` |
+| `req.query` | URL 问号后的参数 | `/api/tasks?status=todo` → `req.query.status` |
+
+**4. HTTP 状态码**
+
+| 码 | 含义 | 什么时候用 |
+|------|------|------|
+| 200 | OK | GET / PUT 成功 |
+| 201 | Created | POST 创建成功 |
+| 400 | Bad Request | 用户输入不合法（如标题为空） |
+| 404 | Not Found | 请求的资源不存在 |
+
+**5. express.Router() —— 模块化路由**
+
+```js
+const router = express.Router();
+router.get('/', ...);    // 定义子路由
+router.post('/', ...);
+
+app.use('/api/tasks', router);  // 挂载到 /api/tasks 前缀下
+```
+
+好处：每个资源（tasks、users）各自一个路由文件，互不干扰。不用把所有接口搬进 index.js。
+
+### 三、遇到的坑与解决方案
+
+无所遇坑，一路通畅。
+
+### 四、代码片段示例
+
+**MVC 三件套完整代码：**
+
+```
+server/
+├── db/connection.js           ← 共享数据库连接（4 行）
+├── models/Task.js             ← M：6 个 SQL 方法
+├── controllers/taskController.js  ← C：参数验证 + 调用 Model + 返回响应
+├── routes/tasks.js            ← R：URL → Controller 映射
+└── index.js                   ← app.use('/api/tasks', tasksRouter)
+```
+
+**models/Task.js —— 数据操作层**
+```js
+const db = require('../db/connection');
+
+const Task = {
+  getAll() {
+    return db.prepare('SELECT * FROM tasks ORDER BY position').all();
+  },
+  getById(id) {
+    return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  },
+  create(title, description) {
+    const result = db.prepare(
+      'INSERT INTO tasks (title, description) VALUES (?, ?)'
+    ).run(title, description);
+    return this.getById(result.lastInsertRowid);  // 返回刚创建的任务
+  },
+  update(id, title, description) {
+    db.prepare(
+      "UPDATE tasks SET title = ?, description = ?, updated_at = datetime('now','localtime') WHERE id = ?"
+    ).run(title, description, id);
+    return this.getById(id);
+  },
+  remove(id) {
+    return db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  },
+  move(id, status, position) {
+    db.prepare(
+      "UPDATE tasks SET status = ?, position = ?, updated_at = datetime('now','localtime') WHERE id = ?"
+    ).run(status, position, id);
+    return this.getById(id);
+  },
+};
+
+module.exports = Task;
+```
+
+**controllers/taskController.js —— 业务逻辑层**
+```js
+const Task = require('../models/Task');
+
+const taskController = {
+  getAll(req, res) {
+    const tasks = Task.getAll();
+    res.json(tasks);
+  },
+  getById(req, res) {
+    const task = Task.getById(Number(req.params.id));
+    if (!task) {
+      return res.status(404).json({ error: '任务不存在' });
+    }
+    res.json(task);
+  },
+  create(req, res) {
+    const { title, description } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: '标题不能为空' });
+    }
+    const task = Task.create(title, description || '');
+    res.status(201).json(task);
+  },
+  update(req, res) {
+    const { title, description } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: '标题不能为空' });
+    }
+    const task = Task.update(Number(req.params.id), title, description || '');
+    res.json(task);
+  },
+  remove(req, res) {
+    Task.remove(Number(req.params.id));
+    res.json({ success: true });
+  },
+  move(req, res) {
+    const { status, position } = req.body;
+    const task = Task.move(Number(req.params.id), status, position);
+    res.json(task);
+  },
+};
+
+module.exports = taskController;
+```
+
+**routes/tasks.js —— 路由映射层**
+```js
+const express = require('express');
+const router = express.Router();
+const taskController = require('../controllers/taskController');
+
+router.get('/', taskController.getAll);
+router.get('/:id', taskController.getById);
+router.post('/', taskController.create);
+router.put('/:id', taskController.update);
+router.delete('/:id', taskController.remove);
+router.patch('/:id/move', taskController.move);
+
+module.exports = router;
+```
+
+### 五、验证命令
+
+```bash
+# 启动服务器
+node server/index.js
+
+# 另一个终端测试接口
+curl http://localhost:3001/api/tasks                    # 获取所有
+curl -X POST http://localhost:3001/api/tasks -H "Content-Type: application/json" -d '{"title":"新任务","description":"描述"}'
+curl -X PUT http://localhost:3001/api/tasks/1 -H "Content-Type: application/json" -d '{"title":"修改后的标题"}'
+curl -X DELETE http://localhost:3001/api/tasks/1
+curl -X PATCH http://localhost:3001/api/tasks/2/move -H "Content-Type: application/json" -d '{"status":"done","position":1}'
+```
+
+### 六、补充知识
+
+**1. API 就是远程的 getter/setter**
+
+面向对象中 `obj.getXxx()` / `obj.setXxx()` 在同一个进程内调用，API 的 GET/POST/PUT 通过网络调用。本质一样（封装数据的读写），区别只是调用方式。
+
+**2. `lastInsertRowid` 是什么？**
+
+SQLite 中每张有 AUTOINCREMENT 主键的表，插入后会返回自增的 id 值。`result.lastInsertRowid` 就是刚才 INSERT 生成的主键。用它可以立即查回完整记录返回给前端，不用再发起一次查询。
+
+**3. `Number(req.params.id)` 为什么这样写？**
+
+URL 参数永远是字符串类型（`"3"` 不是 `3`）。SQLite 的 `WHERE id = ?` 能自动处理类型转换，但显式 `Number()` 是良好习惯，避免 `WHERE id = "3abc"` 之类的问题。
