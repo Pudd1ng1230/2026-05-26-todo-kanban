@@ -566,32 +566,36 @@ body {
   align-items: center;
 }
 .board-tab button {
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  background: transparent;
+  padding: 6px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
   color: var(--text-muted);
-  border-radius: 6px;
+  border-radius: 7px;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .board-tab button:hover {
-  border-color: rgba(0, 184, 212, 0.3);
+  border-color: var(--cyan-dim);
   color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,184,212,0.1);
 }
 .board-tab.active button {
   background: var(--cyan);
   color: #000;
   border-color: var(--cyan);
   font-weight: 600;
+  box-shadow: 0 0 16px rgba(0,184,212,0.3);
 }
 .board-tab.add button {
-  border: 1px dashed rgba(241, 90, 36, 0.3);
+  border: 1px dashed var(--orange-dim);
   color: var(--orange);
+  background: transparent;
 }
 .board-tab.add button:hover {
   border-color: var(--orange);
-  background: rgba(241, 90, 36, 0.1);
+  background: rgba(241,90,36,0.1);
+  box-shadow: 0 0 12px rgba(241,90,36,0.15);
 }
 .board-tab-del {
   margin-left: -4px;

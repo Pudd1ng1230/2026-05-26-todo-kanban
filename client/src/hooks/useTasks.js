@@ -37,17 +37,39 @@ export default function useTasks(boardId) {
 
   const handleMoveTask = useCallback(async (taskId, newStatus, newPosition) => {
     setTasks(prev => {
-      const colTasks = prev
-        .filter(t => t.status === newStatus)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-      const dragged = colTasks.find(t => t.id === taskId);
+      const dragged = prev.find(t => t.id === taskId);
       if (!dragged) return prev;
-      const others = colTasks.filter(t => t.id !== taskId);
-      // 如果跨列拖拽，更新 status
-      const updatedDragged = { ...dragged, status: newStatus };
-      others.splice(newPosition, 0, updatedDragged);
-      const reordered = others.map((t, i) => ({ ...t, position: i }));
-      return prev.map(t => reordered.find(r => r.id === t.id) || t);
+      const oldStatus = dragged.status;
+
+      if (oldStatus === newStatus) {
+        // 同列重排
+        const col = prev
+          .filter(t => t.status === newStatus)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        const without = col.filter(t => t.id !== taskId);
+        without.splice(newPosition, 0, dragged);
+        const reordered = without.map((t, i) => ({ ...t, position: i }));
+        return prev.map(t => reordered.find(r => r.id === t.id) || t);
+      } else {
+        // 跨列：从旧列移除，插入新列
+        const updatedDragged = { ...dragged, status: newStatus };
+        const oldCol = prev
+          .filter(t => t.status === oldStatus && t.id !== taskId)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((t, i) => ({ ...t, position: i }));
+        const newCol = prev
+          .filter(t => t.status === newStatus)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        newCol.splice(newPosition, 0, updatedDragged);
+        const reorderedNew = newCol.map((t, i) => ({ ...t, position: i }));
+        return prev.map(t => {
+          const o = oldCol.find(x => x.id === t.id);
+          if (o) return o;
+          const n = reorderedNew.find(x => x.id === t.id);
+          if (n) return n;
+          return t;
+        });
+      }
     });
     await moveTask(taskId, newStatus, newPosition);
   }, []);
