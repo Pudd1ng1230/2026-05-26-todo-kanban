@@ -525,3 +525,92 @@ const db = new Database(path.join(__dirname, 'todo.db'));
 Todo 看板的业务逻辑极其简单（增删改查），用 C++ 写需要几百行处理内存和字符串，Node.js 只要 5 行。而且前端是 JavaScript，后端也用 JS，不用同时学两种语言。
 
 **类比**：C++ 是重型卡车，Node.js 是买菜车。去超市不需要开卡车。
+
+---
+
+## 10. 置顶功能调试实录
+
+置顶功能经历了两轮修复才真正生效，这里记录踩到的两个坑。
+
+### 10.1 第一坑：CSS `opacity` 的"黑盒陷阱"
+
+**现象**：点击 📌 按钮后，按钮没有变橙色，好像什么都没发生。但后端 API 其实已经正确切换了 `pinned` 字段。
+
+**排查**：用 curl 直接调 `PATCH /api/tasks/:id/pin`，发现后端完全正常——`pinned` 在 0 和 1 之间正确切换。问题一定在前端。
+
+**根因**：📌 按钮被放在 `.card-actions` 这个 div 里面：
+
+```css
+.card-actions { opacity: 0; }           /* 操作栏默认隐藏 */
+.card:hover .card-actions { opacity: 1; } /* 鼠标悬停才显示 */
+```
+
+CSS 的 `opacity` 有个特性：**父元素的透明度会"罩住"所有子元素**。父元素 `opacity: 0` 相当于一个黑盒，里面不管放什么、子元素设多大的 `opacity`，都看不见。
+
+所以 `.card-pin.pinned { opacity: 1; }` 完全没用——它被父元素的 `opacity: 0` 盖住了。
+
+**修复**：把 📌 按钮移出 `.card-actions`，独立绝对定位。这样它有自己的 `opacity`，不受父元素影响。
+
+**教训**：CSS `opacity` 是乘法继承（子元素实际透明度 = 父 × 子），无法被子元素覆盖。如果某个子元素需要独立控制显隐，要么用 `visibility` 替代 `opacity`，要么把子元素移出父容器。
+
+### 10.2 第二坑：排序只看了 `position`，忘了 `pinned`
+
+**现象**：按钮高亮了，但置顶的卡片并没有跳到列的最顶端。
+
+**根因**：前端排序逻辑只按 `position` 排，没有把 `pinned` 纳入排序：
+
+```js
+// ❌ 旧代码：只看 position
+.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+// ✅ 新代码：先看 pinned，再看 position
+.sort((a, b) => {
+  const pinDiff = (b.pinned ?? 0) - (a.pinned ?? 0);  // 置顶的排前面
+  if (pinDiff !== 0) return pinDiff;
+  return (a.position ?? 0) - (b.position ?? 0);        // 同组内按位置排
+});
+```
+
+这个排序规则需要同时存在于两个地方：
+- `Board.jsx` 的 `getTasksByStatus`（控制**视觉显示顺序**）
+- `useTasks.js` 的 `handleMoveTask`（控制**拖拽后的位置计算**）
+
+两处必须一致，否则拖拽时 `destination.index`（视觉位置）对不上内部数组位置。
+
+---
+
+## 11. 上线部署注意事项
+
+如果把项目放到公网给其他人用，有几个必须解决的问题。
+
+### 11.1 GitHub Pages 只能放静态文件
+
+GitHub Pages 像一间"只能摆家具的空房子"——能存放 HTML、CSS、JS 给别人看，但**不能运行 Node.js 进程**。
+
+本项目的后端（Express + SQLite 数据库）需要一个"能做饭的厨房"——需要部署到支持 Node.js 的平台，比如 Render、Railway 等免费服务。
+
+### 11.2 硬编码的 `localhost:3001`
+
+`Card.jsx` 里附件链接写死了 `http://localhost:3001/uploads/...`。`localhost` 的意思是"我自己的电脑"——上线后用户点这个链接会去找用户自己电脑的 3001 端口，而真正的文件在服务器上。需要改为相对路径或使用环境变量。
+
+### 11.3 API 没有门禁
+
+当前所有 API 都是公开的——任何人知道网址就能增删改查你的数据。这就像保险柜很结实但门没锁。需要给后端加一个简单的密码验证（比如请求头里带 token）。
+
+### 11.4 文件上传没有类型限制
+
+multer 当前允许上传任意类型文件。如果有人上传 .html 文件，其他用户打开链接就可能执行恶意代码。应该限制只能上传图片和常见文档类型。
+
+### 11.5 数据库文件在 Git 仓库里
+
+`server/db/todo.db` 被 Git 追踪了。每次推送代码都会带上你本地的数据库文件，将来上线部署时 `git pull` 可能覆盖线上用户的真实数据。需要在 `.gitignore` 加 `*.db`。
+
+---
+
+## 12. 数据库安全快答
+
+| 疑问 | 答案 |
+|------|------|
+| 会不会被 SQL 注入？ | **不会**。所有数据库操作都用 `?` 占位符，用户输入永远不会变成 SQL 代码 |
+| `todo.db` 在 GitHub 上怎么办？ | 加 `*.db` 到 `.gitignore`，让 Git 忽略它 |
+| 陌生人能不能操作我的数据？ | 开发时只有 localhost 能访问，没问题。上线后需要加 API 密码验证 |
