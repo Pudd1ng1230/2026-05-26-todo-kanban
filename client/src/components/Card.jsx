@@ -193,10 +193,16 @@ export default function Card({ id, index, title, description, status, onDelete, 
                 )}
               </div>
 
+              {/* 置顶按钮独立于 card-actions，避免被父级 opacity:0 隐藏 */}
+              <button
+                className={`card-pin-btn ${pinned ? 'pinned' : ''}`}
+                onMouseDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); onPin(id); }}
+                title={pinned ? '取消置顶' : '置顶'}
+              >📌</button>
+
               <div className="card-actions">
                 <button className="card-detail" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setShowDetails(!showDetails); }}>▼</button>
-                <button className={`card-pin ${pinned ? 'pinned' : ''}`} onMouseDown={e => e.stopPropagation()}
-                  onClick={e => { e.stopPropagation(); onPin(id); }} title={pinned ? '取消置顶' : '置顶'}>📌</button>
                 <button className="card-edit" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); startEdit(); }}>✎</button>
                 <button className="card-delete" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}>✕</button>
               </div>
