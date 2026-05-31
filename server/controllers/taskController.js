@@ -52,6 +52,11 @@ const taskController = {
     const task = Task.move(Number(req.params.id), status, position);
     res.json(task);
   },
+
+  togglePin(req, res) {
+    const task = Task.togglePin(Number(req.params.id));
+    res.json(task);
+  },
 };
 
 module.exports = taskController;

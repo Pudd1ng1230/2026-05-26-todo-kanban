@@ -42,6 +42,9 @@ if (!taskColumns.includes('color')) {
 if (!taskColumns.includes('deleted_at')) {
   db.exec("ALTER TABLE tasks ADD COLUMN deleted_at TEXT");
 }
+if (!taskColumns.includes('pinned')) {
+  db.exec("ALTER TABLE tasks ADD COLUMN pinned INTEGER DEFAULT 0");
+}
 
 // ── subtasks 表 ──
 db.exec(`

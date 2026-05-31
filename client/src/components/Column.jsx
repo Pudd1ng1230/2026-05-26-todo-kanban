@@ -4,7 +4,7 @@ import AddCardForm from './AddCardForm';
 
 const statusLabels = { todo: '待办', 'in-progress': '进行中', done: '已完成' };
 
-export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
+export default function Column({ status, tasks, onAdd, onDelete, onEdit, onPin }) {
   return (
     <div className="column">
       <div className="column-header">
@@ -34,8 +34,10 @@ export default function Column({ status, tasks, onAdd, onDelete, onEdit }) {
                   priority={task.priority}
                   dueDate={task.due_date}
                   color={task.color}
+                  pinned={task.pinned}
                   onDelete={onDelete}
                   onEdit={onEdit}
+                  onPin={onPin}
                 />
               ))
             )}

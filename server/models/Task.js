@@ -3,8 +3,8 @@ const db = require('../db/connection');
 const Task = {
   getAll(boardId) {
     const query = boardId
-      ? 'SELECT * FROM tasks WHERE deleted_at IS NULL AND board_id = ? ORDER BY position'
-      : 'SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY position';
+      ? 'SELECT * FROM tasks WHERE deleted_at IS NULL AND board_id = ? ORDER BY pinned DESC, position'
+      : 'SELECT * FROM tasks WHERE deleted_at IS NULL ORDER BY pinned DESC, position';
     return boardId ? db.prepare(query).all(boardId) : db.prepare(query).all();
   },
 
@@ -12,11 +12,11 @@ const Task = {
     const like = `%${keyword}%`;
     if (boardId) {
       return db.prepare(
-        'SELECT * FROM tasks WHERE deleted_at IS NULL AND board_id = ? AND (title LIKE ? OR description LIKE ?) ORDER BY position'
+        'SELECT * FROM tasks WHERE deleted_at IS NULL AND board_id = ? AND (title LIKE ? OR description LIKE ?) ORDER BY pinned DESC, position'
       ).all(boardId, like, like);
     }
     return db.prepare(
-      'SELECT * FROM tasks WHERE deleted_at IS NULL AND (title LIKE ? OR description LIKE ?) ORDER BY position'
+      'SELECT * FROM tasks WHERE deleted_at IS NULL AND (title LIKE ? OR description LIKE ?) ORDER BY pinned DESC, position'
     ).all(like, like);
   },
 
@@ -25,6 +25,12 @@ const Task = {
       return db.prepare('SELECT * FROM tasks WHERE deleted_at IS NOT NULL AND board_id = ? ORDER BY updated_at DESC').all(boardId);
     }
     return db.prepare('SELECT * FROM tasks WHERE deleted_at IS NOT NULL ORDER BY updated_at DESC').all();
+  },
+
+  togglePin(id) {
+    const task = this.getById(id);
+    db.prepare('UPDATE tasks SET pinned = ? WHERE id = ?').run(task.pinned ? 0 : 1, id);
+    return this.getById(id);
   },
 
   getById(id) {

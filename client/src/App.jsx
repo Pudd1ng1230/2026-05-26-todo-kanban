@@ -10,7 +10,7 @@ import './index.css';
 
 function App() {
   const { boards, activeId, setActiveId, addBoard, removeBoard } = useBoards();
-  const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search, reload } = useTasks(activeId);
+  const { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, handleTogglePin, search, reload } = useTasks(activeId);
   const recycle = useRecycleBin(activeId);
   const [showRecycle, setShowRecycle] = useState(false);
 
@@ -47,7 +47,7 @@ function App() {
         ) : error ? (
           <div className="error">加载失败: {error}</div>
         ) : (
-          <Board tasks={tasks} onAdd={addTask} onDelete={removeTask} onMove={handleMoveTask} onEdit={editTask} />
+          <Board tasks={tasks} onAdd={addTask} onDelete={removeTask} onMove={handleMoveTask} onEdit={editTask} onPin={handleTogglePin} />
         )}
 
         {showRecycle && (

@@ -105,6 +105,12 @@ export async function deleteAttachment(id) {
   await fetch(`${BASE}/tasks/0/attachments/${id}`, { method: 'DELETE' });
 }
 
+// ── Pin ──
+export async function togglePin(id) {
+  const res = await fetch(`${BASE}/tasks/${id}/pin`, { method: 'PATCH' });
+  return res.json();
+}
+
 // ── Timer ──
 export async function getTimerTotal(taskId) {
   const res = await fetch(`${BASE}/tasks/${taskId}/timer`);

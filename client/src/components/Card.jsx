@@ -7,7 +7,7 @@ import { getAttachments, uploadAttachment, deleteAttachment } from '../services/
 const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
 const COLORS = ['', '#f15a24', '#00b8d4', '#0d9488', '#7c3aed', '#eab308', '#ec4899'];
 
-export default function Card({ id, index, title, description, status, onDelete, onEdit, priority, dueDate, color }) {
+export default function Card({ id, index, title, description, status, onDelete, onEdit, onPin, priority, dueDate, color, pinned }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [editDesc, setEditDesc] = useState(description);
@@ -80,7 +80,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...((editing || confirmDelete) ? {} : provided.dragHandleProps)}
-          className={`card status-${status} priority-${priority || 'medium'} ${snapshot.isDragging ? 'dragging' : ''} ${isOverdue ? 'overdue' : ''}`}
+          className={`card status-${status} priority-${priority || 'medium'} ${snapshot.isDragging ? 'dragging' : ''} ${isOverdue ? 'overdue' : ''} ${pinned ? 'pinned-highlight' : ''}`}
           style={{ ...provided.draggableProps.style, ...(color ? { borderLeftColor: color } : {}) }}
         >
           {/* ── 删除确认浮层 ── */}
@@ -174,6 +174,8 @@ export default function Card({ id, index, title, description, status, onDelete, 
 
               <div className="card-actions">
                 <button className="card-detail" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setShowDetails(!showDetails); }}>▼</button>
+                <button className={`card-pin ${pinned ? 'pinned' : ''}`} onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); onPin(id); }} title={pinned ? '取消置顶' : '置顶'}>📌</button>
                 <button className="card-edit" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); startEdit(); }}>✎</button>
                 <button className="card-delete" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}>✕</button>
               </div>

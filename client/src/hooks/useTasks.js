@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getTasks, createTask, updateTask, deleteTask, restoreTask,
-  permanentDeleteTask, moveTask, searchTasks, getDeletedTasks,
+  permanentDeleteTask, moveTask, searchTasks, getDeletedTasks, togglePin,
 } from '../services/api';
 
 export default function useTasks(boardId) {
@@ -36,12 +36,17 @@ export default function useTasks(boardId) {
   }, []);
 
   const handleMoveTask = useCallback(async (taskId, newStatus, newPosition) => {
+    let wasPinned = false;
+    let wasCrossColumn = false;
+
     setTasks(prev => {
       const dragged = prev.find(t => t.id === taskId);
       if (!dragged) return prev;
       const oldStatus = dragged.status;
+      wasPinned = !!dragged.pinned;
+      wasCrossColumn = oldStatus !== newStatus;
 
-      if (oldStatus === newStatus) {
+      if (!wasCrossColumn) {
         // 同列重排
         const col = prev
           .filter(t => t.status === newStatus)
@@ -51,8 +56,8 @@ export default function useTasks(boardId) {
         const reordered = without.map((t, i) => ({ ...t, position: i }));
         return prev.map(t => reordered.find(r => r.id === t.id) || t);
       } else {
-        // 跨列：从旧列移除，插入新列
-        const updatedDragged = { ...dragged, status: newStatus };
+        // 跨列：从旧列移除，插入新列，取消置顶
+        const updatedDragged = { ...dragged, status: newStatus, pinned: 0 };
         const oldCol = prev
           .filter(t => t.status === oldStatus && t.id !== taskId)
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -71,7 +76,16 @@ export default function useTasks(boardId) {
         });
       }
     });
+
+    if (wasCrossColumn && wasPinned) {
+      togglePin(taskId);
+    }
     await moveTask(taskId, newStatus, newPosition);
+  }, []);
+
+  const handleTogglePin = useCallback(async (taskId) => {
+    const updated = await togglePin(taskId);
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
   }, []);
 
   const search = useCallback(async (keyword) => {
@@ -82,7 +96,7 @@ export default function useTasks(boardId) {
       .finally(() => setLoading(false));
   }, [boardId, loadTasks]);
 
-  return { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, search, reload: loadTasks };
+  return { tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, handleTogglePin, search, reload: loadTasks };
 }
 
 export function useRecycleBin(boardId) {

@@ -7,7 +7,7 @@ const columns = [
   { status: 'done' },
 ];
 
-export default function Board({ tasks, onAdd, onDelete, onMove, onEdit }) {
+export default function Board({ tasks, onAdd, onDelete, onMove, onEdit, onPin }) {
   const getTasksByStatus = (status) =>
     tasks
       .filter((t) => t.status === status)
@@ -39,6 +39,7 @@ export default function Board({ tasks, onAdd, onDelete, onMove, onEdit }) {
             onAdd={onAdd}
             onDelete={onDelete}
             onEdit={onEdit}
+            onPin={onPin}
           />
         ))}
       </div>

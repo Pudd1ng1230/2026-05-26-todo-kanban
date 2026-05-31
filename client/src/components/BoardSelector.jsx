@@ -18,7 +18,7 @@ export default function BoardSelector({ boards, activeId, onSelect, onAdd, onDel
         <div key={b.id} className={`board-tab ${b.id === activeId ? 'active' : ''}`}>
           <button onClick={() => onSelect(b.id)}>{b.name}</button>
           {boards.length > 1 && (
-            <span className="board-tab-del" onClick={() => onDelete(b.id)} title="删除板块">×</span>
+            <span className="board-tab-del" onClick={() => { if (window.confirm(`删除板块「${b.name}」？`)) onDelete(b.id); }} title="删除板块">×</span>
           )}
         </div>
       ))}

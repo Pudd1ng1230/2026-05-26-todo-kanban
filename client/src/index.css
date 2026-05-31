@@ -315,6 +315,7 @@ body {
   opacity: 1;
 }
 
+.card-pin,
 .card-edit,
 .card-delete {
   width: 22px;
@@ -336,9 +337,22 @@ body {
   color: var(--cyan);
 }
 
+.card-pin.pinned {
+  color: var(--orange);
+  opacity: 1;
+}
+.card-pin:hover {
+  background: rgba(232, 120, 80, 0.2);
+  color: var(--orange);
+}
 .card-delete:hover {
   background: rgba(241, 90, 36, 0.25);
   color: var(--orange);
+}
+
+/* Pinned card subtle highlight */
+.card.pinned-highlight {
+  border-top: 1px solid rgba(232, 120, 80, 0.15);
 }
 
 /* ── Card edit form ── */
