@@ -63,11 +63,18 @@ export default function useTasks(boardId) {
       const oldStatus = dragged.status;
       wasCrossColumn = oldStatus !== newStatus;
 
+      // 排序规则：置顶优先 → 同置顶组内按 position 排序（与 Board.jsx 保持一致）
+      const sortCol = (a, b) => {
+        const pinDiff = (b.pinned ?? 0) - (a.pinned ?? 0);
+        if (pinDiff !== 0) return pinDiff;
+        return (a.position ?? 0) - (b.position ?? 0);
+      };
+
       if (!wasCrossColumn) {
         // 同列重排：保持所有属性（包括 pinned），只更新 position
         const col = prev
           .filter(t => t.status === newStatus)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          .sort(sortCol);
         const without = col.filter(t => t.id !== taskId);
         without.splice(newPosition, 0, dragged);
         const reordered = without.map((t, i) => ({ ...t, position: i }));
@@ -77,11 +84,11 @@ export default function useTasks(boardId) {
         const updatedDragged = { ...dragged, status: newStatus };
         const oldCol = prev
           .filter(t => t.status === oldStatus && t.id !== taskId)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .sort(sortCol)
           .map((t, i) => ({ ...t, position: i }));
         const newCol = prev
           .filter(t => t.status === newStatus)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+          .sort(sortCol);
         newCol.splice(newPosition, 0, updatedDragged);
         const reorderedNew = newCol.map((t, i) => ({ ...t, position: i }));
         return prev.map(t => {

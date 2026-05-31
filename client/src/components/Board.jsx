@@ -17,11 +17,18 @@ const columns = [
   { status: 'done' },
 ];
 
+// 排序规则：置顶优先 → 同置顶组内按 position 排序
+const sortCards = (a, b) => {
+  const pinDiff = (b.pinned ?? 0) - (a.pinned ?? 0);
+  if (pinDiff !== 0) return pinDiff;
+  return (a.position ?? 0) - (b.position ?? 0);
+};
+
 export default function Board({ tasks, onAdd, onDelete, onMove, onEdit, onPin }) {
   const getTasksByStatus = (status) =>
     tasks
       .filter((t) => t.status === status)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      .sort(sortCards);
 
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result;
