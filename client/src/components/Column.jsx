@@ -1,3 +1,20 @@
+/**
+ * Column — 单列容器
+ *
+ * 职责：
+ * 1. 渲染列标题（dot + 名称 + 计数）
+ * 2. 作为 Droppable 区域接收拖入的卡片
+ * 3. 渲染该列的所有 Card + 底部 AddCardForm
+ *
+ * Props:
+ * @param {string} status — 列标识 todo / in-progress / done
+ * @param {Array} tasks — 该列的任务列表
+ * @param {Function} onAdd — 新增卡片回调
+ * @param {Function} onDelete — 删除卡片回调
+ * @param {Function} onEdit — 编辑卡片回调
+ * @param {Function} onPin — 置顶切换回调
+ */
+
 import { Droppable } from '@hello-pangea/dnd';
 import Card from './Card';
 import AddCardForm from './AddCardForm';

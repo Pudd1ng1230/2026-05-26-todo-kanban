@@ -1,8 +1,29 @@
+/**
+ * Card — 单张任务卡片
+ *
+ * 这是项目中最复杂的组件，集成了 5 种交互模式：
+ *   1. 正常显示 — 标题 + 描述 + 优先级/截止日期角标 + 操作按钮
+ *   2. 编辑态 — 内联表单（标题/描述/优先级/日期/颜色）
+ *   3. 删除确认 — 半透明遮罩 + 确认/取消按钮
+ *   4. 详情展开 — 子任务列表 + 附件列表 + 上传
+ *   5. 拖拽中 — Draggable 包裹，isDragDisabled 在编辑/确认时禁用
+ *
+ * 状态管理：
+ *   editing / confirmDelete — 控制当前交互模式（互斥）
+ *   showDetails — 展开/折叠子任务+附件面板
+ *   subtasks / attachments — 从 API 懒加载（仅在 showDetails 时请求）
+ *   timer — 通过 useTimer hook 管理计时器
+ *
+ * Props: 略（见 Column.jsx 透传说明）
+ */
+
 import { useState, useEffect } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import useTimer from '../hooks/useTimer';
-import { getSubtasks, createSubtask, toggleSubtask, deleteSubtask } from '../services/api';
-import { getAttachments, uploadAttachment, deleteAttachment } from '../services/api';
+import {
+  getSubtasks, createSubtask, toggleSubtask, deleteSubtask,
+  getAttachments, uploadAttachment, deleteAttachment,
+} from '../services/api';
 
 const PRIORITY_LABELS = { high: '高', medium: '中', low: '低' };
 const COLORS = ['', '#f15a24', '#00b8d4', '#0d9488', '#7c3aed', '#eab308', '#ec4899'];

@@ -1,3 +1,16 @@
+/**
+ * BoardSelector — 板块切换标签栏
+ *
+ * 展示所有板块为可点击的标签（tab），当前激活板块有高亮样式。
+ * 支持新建板块（内联输入框）和删除板块（× 按钮，至少保留一个）。
+ *
+ * @param {Array} boards — 板块列表 [{id, name}, ...]
+ * @param {number} activeId — 当前激活板块 ID
+ * @param {Function} onSelect(id) — 切换板块回调
+ * @param {Function} onAdd(name) — 新建板块回调
+ * @param {Function} onDelete(id) — 删除板块回调
+ */
+
 import { useState } from 'react';
 
 export default function BoardSelector({ boards, activeId, onSelect, onAdd, onDelete }) {

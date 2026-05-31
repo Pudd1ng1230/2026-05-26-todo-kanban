@@ -1,6 +1,22 @@
+/**
+ * API 服务层 — 封装所有后端 HTTP 请求
+ *
+ * BASE = '/api'，通过 Vite proxy 转发到 localhost:3001。
+ * 所有函数返回 fetch 的 res.json() Promise。
+ *
+ * 模块划分：
+ *   Boards    — 板块 CRUD
+ *   Tasks     — 任务 CRUD + 搜索 + 回收站 + 移动 + 置顶
+ *   Subtasks  — 子任务 CRUD + toggle
+ *   Attachments — 附件上传/查询/删除
+ *   Timer     — 计时器读写
+ */
+
 const BASE = '/api';
 
-// ── Boards ──
+// ═══════════════════════════════════════
+//  Boards — 板块 API
+// ═══════════════════════════════════════
 export async function getBoards() {
   const res = await fetch(`${BASE}/boards`);
   return res.json();
@@ -17,7 +33,9 @@ export async function deleteBoard(id) {
   await fetch(`${BASE}/boards/${id}`, { method: 'DELETE' });
 }
 
-// ── Tasks ──
+// ═══════════════════════════════════════
+//  Tasks — 任务 API
+// ═══════════════════════════════════════
 export async function getTasks(boardId) {
   const url = boardId ? `${BASE}/tasks?board_id=${boardId}` : `${BASE}/tasks`;
   const res = await fetch(url);
@@ -69,7 +87,9 @@ export async function moveTask(id, status, position) {
   return res.json();
 }
 
-// ── Subtasks ──
+// ═══════════════════════════════════════
+//  Subtasks — 子任务 API
+// ═══════════════════════════════════════
 export async function getSubtasks(taskId) {
   const res = await fetch(`${BASE}/tasks/${taskId}/subtasks`);
   return res.json();
@@ -90,7 +110,9 @@ export async function deleteSubtask(id) {
   await fetch(`${BASE}/tasks/0/subtasks/${id}`, { method: 'DELETE' });
 }
 
-// ── Attachments ──
+// ═══════════════════════════════════════
+//  Attachments — 附件 API
+// ═══════════════════════════════════════
 export async function getAttachments(taskId) {
   const res = await fetch(`${BASE}/tasks/${taskId}/attachments`);
   return res.json();
@@ -105,13 +127,17 @@ export async function deleteAttachment(id) {
   await fetch(`${BASE}/tasks/0/attachments/${id}`, { method: 'DELETE' });
 }
 
-// ── Pin ──
+// ═══════════════════════════════════════
+//  Pin — 置顶 API
+// ═══════════════════════════════════════
 export async function togglePin(id) {
   const res = await fetch(`${BASE}/tasks/${id}/pin`, { method: 'PATCH' });
   return res.json();
 }
 
-// ── Timer ──
+// ═══════════════════════════════════════
+//  Timer — 计时器 API
+// ═══════════════════════════════════════
 export async function getTimerTotal(taskId) {
   const res = await fetch(`${BASE}/tasks/${taskId}/timer`);
   return res.json();

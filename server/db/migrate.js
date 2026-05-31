@@ -1,10 +1,28 @@
+/**
+ * 数据库迁移脚本
+ *
+ * 职责：建表 + 增量添加字段。
+ * 设计为可重复安全运行 — 用 PRAGMA table_info 检测字段是否存在再 ALTER TABLE，
+ * 不会因为重复执行而报错。
+ *
+ * 首次运行或字段变更后执行：node server/db/migrate.js
+ *
+ * 数据表：
+ *   boards          — 板块
+ *   tasks           — 任务卡片（从 Phase 1 基础版逐步扩展字段）
+ *   subtasks        — 子任务，外键关联 tasks
+ *   timer_sessions  — 计时器记录，外键关联 tasks
+ *   attachments     — 附件元数据，外键关联 tasks
+ */
+
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
 const db = new Database(path.join(__dirname, 'todo.db'));
 
-// 启用 WAL 模式提升并发
+// 启用 WAL 模式提升并发读写性能
+// 启用外键约束（CASCADE 删除等）
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 

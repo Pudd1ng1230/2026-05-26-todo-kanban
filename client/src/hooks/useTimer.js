@@ -1,3 +1,16 @@
+/**
+ * useTimer — 计时器 Hook
+ *
+ * 设计：
+ *   - 使用 Date.now() 计算真实耗时（而非累加 setInterval 次数），避免定时器漂移
+ *   - 暂停时保存本次 duration 到后端，并累加到 savedTotal
+ *   - elapsed 在暂停后保持不变（显示最后计时值），reset 清零
+ *   - savedTotal 从后端加载，与本地 elapsed 分离显示
+ *
+ * @param {number} taskId — 关联的任务 ID
+ * @returns {{ elapsed, savedTotal, running, display, start, pause, reset, toggle }}
+ */
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { getTimerTotal, saveTimerDuration } from '../services/api';
 

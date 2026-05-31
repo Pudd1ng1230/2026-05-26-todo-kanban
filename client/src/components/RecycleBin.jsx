@@ -1,3 +1,18 @@
+/**
+ * RecycleBin — 回收站弹窗
+ *
+ * 以模态浮层展示所有软删除的任务。
+ * 支持恢复（清除 deleted_at）和彻底删除（不可恢复）。
+ * 点击遮罩层关闭。
+ *
+ * @param {Array} tasks — 回收站中的任务列表
+ * @param {Array} boards — 板块列表（用于显示所属板块名）
+ * @param {boolean} loading — 加载状态
+ * @param {Function} onRestore(id) — 恢复回调
+ * @param {Function} onPermanentDelete(id) — 彻底删除回调
+ * @param {Function} onClose — 关闭弹窗回调
+ */
+
 export default function RecycleBin({ tasks, boards, loading, onRestore, onPermanentDelete, onClose }) {
   const getBoardName = (boardId) => {
     const board = boards.find(b => b.id === boardId);

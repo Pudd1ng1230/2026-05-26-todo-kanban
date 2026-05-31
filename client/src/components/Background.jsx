@@ -1,8 +1,22 @@
+/**
+ * Background — Canvas 粒子背景动画
+ *
+ * 使用 requestAnimationFrame 驱动，不经过 React 渲染周期（性能优化）。
+ *
+ * 效果：
+ *   - 40 个随机色粒子（橙/青/青绿）缓慢漂移
+ *   - 鼠标 150px 范围内粒子被推开
+ *   - 同色粒子间距 < 120px 时绘制半透明连线 → 星图效果
+ *   - 鼠标附近粒子变亮
+ *
+ * Canvas 覆盖全视口，pointer-events: none 不拦截点击。
+ */
+
 import { useEffect, useRef } from 'react';
 
-const PARTICLE_COUNT = 40;
-const CONNECT_DIST = 120;
-const MOUSE_INFLUENCE = 150;
+const PARTICLE_COUNT = 40;       // 粒子数量
+const CONNECT_DIST = 120;        // 连线距离阈值
+const MOUSE_INFLUENCE = 150;     // 鼠标排斥半径
 
 const COLORS = [
   { r: 241, g: 90, b: 36 },   // orange

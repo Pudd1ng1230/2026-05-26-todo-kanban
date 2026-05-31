@@ -1,3 +1,14 @@
+/**
+ * App — 应用根组件
+ *
+ * 职责：
+ * 1. 管理全局状态（板块、任务、回收站）
+ * 2. 组合所有子组件（Background、BoardSelector、SearchBar、Board、RecycleBin）
+ * 3. 处理加载态、错误态、正常态三种 UI 分支
+ *
+ * 数据流：useBoards + useTasks hooks → props 向下传递 → 子组件通过回调通知 App
+ */
+
 import { useState } from 'react';
 import Board from './components/Board';
 import BoardSelector from './components/BoardSelector';

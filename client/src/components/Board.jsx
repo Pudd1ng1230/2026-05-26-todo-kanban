@@ -1,6 +1,16 @@
+/**
+ * Board — 看板主体
+ *
+ * 职责：
+ * 1. 提供 DragDropContext 包裹整个拖拽区域
+ * 2. 按 status 分组任务，透传给三个 Column
+ * 3. 处理 onDragEnd：解析拖拽结果 → 调用 onMove(taskId, newStatus, newPosition)
+ */
+
 import { DragDropContext } from '@hello-pangea/dnd';
 import Column from './Column';
 
+// 三列配置：列标识 = 任务 status 字段的值
 const columns = [
   { status: 'todo' },
   { status: 'in-progress' },

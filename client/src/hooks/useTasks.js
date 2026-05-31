@@ -1,3 +1,22 @@
+/**
+ * useTasks — 任务状态管理 Hook
+ *
+ * 核心职责：
+ *   1. 加载任务列表（支持按板块筛选）
+ *   2. 增删改操作 + 乐观更新
+ *   3. 拖拽移动 — 先乐观更新本地 state，再异步持久化到后端
+ *   4. 搜索 — 关键字为空时重置为全量加载
+ *   5. 置顶切换
+ *
+ * 乐观更新策略：拖拽时立刻重排本地数组（UI 秒响应），
+ * 同时异步调用 moveTask API。如果 API 失败，下次 loadTasks 会覆盖为正确数据。
+ *
+ * useRecycleBin（导出）— 回收站专用 Hook，复用 getDeletedTasks / restoreTask / permanentDeleteTask。
+ *
+ * @param {number} boardId — 当前板块 ID
+ * @returns {{ tasks, loading, error, addTask, removeTask, editTask, handleMoveTask, handleTogglePin, search, reload }}
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   getTasks, createTask, updateTask, deleteTask, restoreTask,
@@ -36,18 +55,16 @@ export default function useTasks(boardId) {
   }, []);
 
   const handleMoveTask = useCallback(async (taskId, newStatus, newPosition) => {
-    let wasPinned = false;
     let wasCrossColumn = false;
 
     setTasks(prev => {
       const dragged = prev.find(t => t.id === taskId);
       if (!dragged) return prev;
       const oldStatus = dragged.status;
-      wasPinned = !!dragged.pinned;
       wasCrossColumn = oldStatus !== newStatus;
 
       if (!wasCrossColumn) {
-        // 同列重排
+        // 同列重排：保持所有属性（包括 pinned），只更新 position
         const col = prev
           .filter(t => t.status === newStatus)
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -56,8 +73,8 @@ export default function useTasks(boardId) {
         const reordered = without.map((t, i) => ({ ...t, position: i }));
         return prev.map(t => reordered.find(r => r.id === t.id) || t);
       } else {
-        // 跨列：从旧列移除，插入新列，取消置顶
-        const updatedDragged = { ...dragged, status: newStatus, pinned: 0 };
+        // 跨列移动：更新 status 和 position，但保留 pinned（置顶状态跟随卡片，不自动取消）
+        const updatedDragged = { ...dragged, status: newStatus };
         const oldCol = prev
           .filter(t => t.status === oldStatus && t.id !== taskId)
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -77,9 +94,7 @@ export default function useTasks(boardId) {
       }
     });
 
-    if (wasCrossColumn && wasPinned) {
-      togglePin(taskId);
-    }
+    // 只持久化状态和位置到后端，pinned 由 togglePin 接口单独管理
     await moveTask(taskId, newStatus, newPosition);
   }, []);
 

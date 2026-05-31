@@ -1,3 +1,14 @@
+/**
+ * useBoards — 板块状态管理 Hook
+ *
+ * 职责：
+ *   - 加载板块列表并维护 activeId（当前激活的板块）
+ *   - 新建 / 删除板块后自动调整 activeId
+ *   - 使用 useRef 避免 removeBoard 回调中的闭包过期问题
+ *
+ * @returns {{ boards, activeId, setActiveId, addBoard, removeBoard, reload }}
+ */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getBoards, createBoard, deleteBoard } from '../services/api';
 

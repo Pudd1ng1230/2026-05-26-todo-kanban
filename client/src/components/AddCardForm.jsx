@@ -1,5 +1,19 @@
+/**
+ * AddCardForm — 新建卡片表单
+ *
+ * 渐进式展示：
+ *   默认 → + 添加卡片 按钮
+ *   点击 → 展开标题输入框 + 描述
+ *   点"更多选项" → 展开优先级 / 截止日期 / 颜色选择器
+ *
+ * 支持回车快捷提交（不按 Shift 时）。
+ *
+ * @param {Function} onAdd(title, desc, priority, dueDate, color) — 提交回调
+ */
+
 import { useState } from 'react';
 
+// 可选的 7 种卡片颜色
 const COLORS = ['', '#f15a24', '#00b8d4', '#0d9488', '#7c3aed', '#eab308', '#ec4899'];
 
 export default function AddCardForm({ onAdd }) {
