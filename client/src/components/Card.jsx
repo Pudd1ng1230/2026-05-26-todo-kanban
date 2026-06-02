@@ -69,12 +69,12 @@ export default function Card({ id, index, title, description, status, onDelete, 
   };
 
   const toggleSub = async (subId) => {
-    const updated = await toggleSubtask(subId);
+    const updated = await toggleSubtask(id, subId);
     setSubtasks(prev => prev.map(s => s.id === subId ? updated : s));
   };
 
   const removeSub = async (subId) => {
-    await deleteSubtask(subId);
+    await deleteSubtask(id, subId);
     setSubtasks(prev => prev.filter(s => s.id !== subId));
   };
 
@@ -87,7 +87,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
   };
 
   const removeAtt = async (attId) => {
-    await deleteAttachment(attId);
+    await deleteAttachment(id, attId);
     setAttachments(prev => prev.filter(a => a.id !== attId));
   };
 
@@ -171,7 +171,7 @@ export default function Card({ id, index, title, description, status, onDelete, 
                   <div className="attach-section">
                     {attachments.map(a => (
                       <div key={a.id} className="attach-item" onMouseDown={e => e.stopPropagation()}>
-                        <a href={`http://localhost:3001/uploads/${a.filename}`} target="_blank" rel="noreferrer">{a.original_name}</a>
+                        <a href={`/uploads/${a.filename}`} target="_blank" rel="noreferrer">{a.original_name}</a>
                         <button onClick={() => removeAtt(a.id)}>×</button>
                       </div>
                     ))}

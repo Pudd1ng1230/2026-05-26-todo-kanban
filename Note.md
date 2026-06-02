@@ -614,3 +614,243 @@ multer 当前允许上传任意类型文件。如果有人上传 .html 文件，
 | 会不会被 SQL 注入？ | **不会**。所有数据库操作都用 `?` 占位符，用户输入永远不会变成 SQL 代码 |
 | `todo.db` 在 GitHub 上怎么办？ | 加 `*.db` 到 `.gitignore`，让 Git 忽略它 |
 | 陌生人能不能操作我的数据？ | 开发时只有 localhost 能访问，没问题。上线后需要加 API 密码验证 |
+
+
+---
+
+## 13. 上线准备 — 从"能跑"到"能上线"
+
+本章记录项目从"本地开发完成"到"可以安全部署到公网"所做的 14 项修复。每一项都包含**问题是什么、为什么危险/不好、怎么修、原理**四个部分。
+
+---
+
+### 13.1 P0-1：附件链接硬编码 localhost
+
+**问题**：`Card.jsx` 第 174 行硬编码了 `http://localhost:3001/uploads/${filename}`。
+
+**为什么危险**：`localhost` 在每台电脑上指向"这台电脑自己"。用户 A 打开你的网站 → 点击附件链接 → 浏览器访问 **用户 A 自己电脑**的 3001 端口 → 当然找不到文件。文件在服务器上，不在用户电脑上。
+
+**修复**：改为相对路径 `/uploads/${filename}`。
+
+```
+改前：http://localhost:3001/uploads/1717000000-123456.jpg
+改后：/uploads/1717000000-123456.jpg
+```
+
+**原理**：浏览器遇到 `/` 开头的路径会自动拼上当前网站的域名。你在 `https://mykanban.com` 访问 → 浏览器请求 `https://mykanban.com/uploads/xxx.jpg` → 服务器正确返回文件。同时给 Vite dev proxy 加了 `/uploads` 转发，开发模式下也能正常访问。
+
+**涉及文件**：
+- `client/src/components/Card.jsx:174` — href 改为 `/uploads/...`
+- `client/vite.config.js` — proxy 加 `/uploads` → `localhost:3001`
+
+---
+
+### 13.2 P0-2：api.js 硬编码 taskId=0
+
+**问题**：`toggleSubtask`、`deleteSubtask`、`deleteAttachment` 三个函数里 URL 写死了 `/tasks/0/subtasks/...`，`taskId` 永远是 0。
+
+**为什么能"碰巧"工作**：后端的子任务和附件路由里，删除/切换操作只用了 `req.params.id`（子任务 ID 或附件 ID），根本没用到 `req.params.taskId`。所以 taskId=0 也能找到正确的记录——但这完全是巧合，一旦后端加了 `taskId` 权限校验就立刻炸。
+
+**修复**：三个函数各加一个 `taskId` 参数，URL 改为 `/tasks/${taskId}/...`。调用方 `Card.jsx` 传入选区的 `id`（即 taskId）。
+
+```
+改前：toggleSubtask(subId)       → PATCH /api/tasks/0/subtasks/5/toggle
+改后：toggleSubtask(taskId, id)  → PATCH /api/tasks/42/subtasks/5/toggle
+```
+
+**涉及文件**：
+- `client/src/services/api.js` — 三个函数签名 + URL
+- `client/src/components/Card.jsx` — 三个调用点传入 `id`
+
+---
+
+### 13.3 P0-3：.gitignore 漏了数据库文件
+
+**问题**：`.gitignore` 只屏蔽了 `*.db-shm` 和 `*.db-wal`（SQLite WAL 模式的临时文件），但 `todo.db` 主文件仍然被 Git 追踪。
+
+**为什么危险**：
+1. **隐私泄露** — 你的所有看板数据（任务、描述、截止日期）全在 `.db` 文件里，push 到 GitHub 等于公开
+2. **部署灾难** — 线上服务器 `git pull` 更新代码时，仓库里的旧 `.db` 会**覆盖**线上用户正在使用的真实数据库
+
+**修复**：
+- `.gitignore` 加 `*.db`
+- `git rm --cached server/db/todo.db` 从 Git 历史中移除（文件本身保留在本地）
+
+```
+改前：*.db-shm  *.db-wal      ← 只忽略临时文件
+改后：*.db  *.db-shm  *.db-wal ← 所有数据库文件都不追踪
+```
+
+---
+
+### 13.4 P0-4：生产部署架构
+
+**问题**：`npm run dev` 依赖两个独立进程（Vite :5173 + Express :3001），通过 Vite proxy 转发 `/api`。这个架构**只在开发模式有效**——`vite build` 后没有 dev server，proxy 不存在。
+
+**修复**：让 Express 在生产模式下直接托管前端的构建产物。
+
+**实现**：
+1. `server/index.js` 检测 `NODE_ENV === 'production'`
+2. 生产模式下，用 `express.static` 托管 `client/dist/` 目录
+3. 所有非 API 的 GET 请求返回 `index.html`（SPA fallback — 支持 React Router）
+
+**中间件顺序是关键**（Express 按注册顺序匹配路由）：
+```
+① CORS / Morgan / JSON 解析    ← 全局中间件
+② /api/health                   ← 健康检查（不需要认证）
+③ /api/* 限流                   ← 防滥用
+④ /api/* 认证                   ← 验证 API Key
+⑤ /api/boards, /api/tasks...   ← API 路由
+⑥ /uploads 静态文件             ← 附件
+⑦ client/dist 静态文件          ← 前端 JS/CSS/图片（仅生产模式）
+⑧ SPA fallback (* → index.html) ← 所有路由回退（仅生产模式）
+⑨ 全局错误处理                  ← 兜底
+```
+
+**新增脚本**：
+```bash
+npm run build   # 构建前端 → client/dist/
+npm start       # 生产模式启动（NODE_ENV=production node server/index.js）
+```
+
+---
+
+### 13.5 P0-5：API 认证
+
+**问题**：所有 API 完全公开，任何人知道 URL 就能操作你的数据。
+
+**为什么不需要 JWT/OAuth**：本项目是个人看板工具，不是多用户 SaaS。JWT 需要登录接口 + token 刷新 + 用户表，对个人工具是过度设计。**共享密钥（API Key）**方案零依赖、零数据库改动、足够安全。
+
+**实现原理**：
+
+```
+┌─────────────┐         ┌─────────────────┐
+│   浏览器      │  X-API-Key: abc123      │   Express        │
+│  (前端构建时  │ ──────────────────────→ │   比对环境变量    │
+│   注入 Key)   │                         │   API_KEY=abc123 │
+│              │ ←────────────────────── │   一致 → 放行    │
+│              │   401 Unauthorized       │   不一致 → 401   │
+└─────────────┘                         └─────────────────┘
+```
+
+**服务端**（`server/middleware/auth.js`）：
+- 从 `process.env.API_KEY` 读密钥
+- **未设置时跳过认证**（向后兼容开发环境 — 不设 Key 照常工作）
+- 设置了则要求每个 `/api` 请求的 `X-API-Key` 头匹配
+
+**客户端**（`client/src/services/api.js`）：
+- 所有请求通过 `apiFetch()` 统一发出
+- `apiFetch` 自动从 `import.meta.env.VITE_API_KEY` 读取 Key 并附加到请求头
+- Vite 在构建时将 `VITE_API_KEY` 环境变量注入代码
+
+**部署时**：
+```bash
+# .env 文件（不入 Git）
+API_KEY=your-64-char-random-secret
+VITE_API_KEY=your-64-char-random-secret
+```
+
+---
+
+### 13.6 P1-1：CORS 跨域配置
+
+**问题**：前后端分离部署到不同域名/端口时，浏览器会拦截跨域请求。
+
+**什么是 CORS**：浏览器的同源策略规定 — `https://mykanban.com` 的页面不能随意请求 `https://api.other.com` 的数据。CORS（Cross-Origin Resource Sharing）是服务器告诉浏览器"我允许哪些来源访问我"的机制。
+
+**实现**：
+```js
+// 开发环境：允许 Vite dev server (localhost:5173)
+// 生产环境：仅允许同源（前端和后端同一域名），或通过 CORS_ORIGIN 指定
+const corsOrigin = isProduction
+  ? (process.env.CORS_ORIGIN || true)  // true = 同源
+  : 'http://localhost:5173';
+app.use(cors({ origin: corsOrigin, credentials: true }));
+```
+
+---
+
+### 13.7 P1-2：文件上传类型白名单
+
+**问题**：multer 只限制了大小（10MB），未限制类型。攻击者可以上传 `.html` 文件，其他用户打开该链接时可能执行恶意脚本（XSS）。
+
+**修复**：给 multer 添加 `fileFilter`，只允许安全类型：
+
+| 类别 | 允许的类型 |
+|------|-----------|
+| 图片 | JPEG, PNG, GIF, WebP, SVG |
+| 文档 | PDF, TXT, CSV, Word, Excel |
+| 压缩包 | ZIP, 7z |
+
+**原理**：multer 在上传时读取文件的 MIME type（如 `image/png`），`fileFilter` 回调检查是否在白名单内。不在白名单 → 抛错误 → 全局错误处理器捕获 → 返回 400。
+
+---
+
+### 13.8 P1-3：PORT 环境变量 + 请求限流 + 日志
+
+**PORT 环境变量**：硬编码 `3001` 导致部署平台无法自定义端口。改为 `process.env.PORT || 3001`，兼容所有云平台。
+
+**请求限流**（express-rate-limit）：每个 IP 每分钟最多 100 次请求。防止：
+- 恶意脚本暴力调用 API
+- 前端 bug 导致的无限循环请求
+
+**请求日志**（morgan）：开发模式用 `dev` 格式（彩色简洁），生产模式用 `combined` 格式（标准 Apache 日志，含 IP、User-Agent、响应时间）。出问题时可以回溯"谁在什么时候调了什么接口"。
+
+---
+
+### 13.9 P2-1：Attachment Model — MVC 完整性
+
+**问题**：`attachmentController.js` 里直接写 `db.prepare(...)`，跳过了 Model 层。项目中 Task、Board、Subtask、Timer 都有对应的 Model，唯独 Attachment 没有——破坏了架构一致性。
+
+**修复**：创建 `server/models/Attachment.js`，封装三个方法：
+- `Attachment.findByTaskId(taskId)` — 查某任务的所有附件
+- `Attachment.findById(id)` — 查单个附件
+- `Attachment.create(taskId, filename, originalName, size)` — 创建记录
+- `Attachment.remove(id)` — 删除记录
+
+Controller 不再直接碰 `db`，而是通过 `Attachment.xxx()` 操作数据。
+
+**为什么重要**：如果将来换数据库（比如从 SQLite 换 PostgreSQL），只需要改 Model 层，Controller 一行不动。
+
+---
+
+### 13.10 P2-2：全局错误处理 + 健康检查
+
+**全局错误处理中间件**：Express 的四参数中间件 `(err, req, res, next)` 是所有未捕获异常的"安全网"。
+
+```js
+app.use((err, req, res, _next) => {
+  // multer 文件太大
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json(...);
+  // multer 文件类型不合法
+  if (err.message?.startsWith('不支持的文件类型')) return res.status(400).json(...);
+  // 其他错误：生产环境不暴露详情（防止信息泄露）
+  res.status(500).json({ error: isProduction ? '服务器内部错误' : err.message });
+});
+```
+
+**健康检查**：`GET /api/health` 返回 `{ status: 'ok', uptime, timestamp }`。用途：
+- 负载均衡器用它判断服务器是否存活
+- 监控系统（如 UptimeRobot）定期 ping 它
+
+---
+
+### 13.11 部署流程总结
+
+```bash
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env，填入 API_KEY 和 VITE_API_KEY
+
+# 2. 安装依赖 + 构建前端
+npm install && cd server && npm install && cd ../client && npm install && cd ..
+npm run build
+
+# 3. 初始化数据库（首次）
+node server/db/migrate.js
+
+# 4. 启动
+npm start          # 生产模式，单进程，Express 托管一切
+# 或
+npm run dev        # 开发模式，双进程，Vite HMR 热更新
+```
